@@ -5,13 +5,12 @@ import argparse
 
 # Constant blocks
 
-const_header = '''
-mlp: THEORY
+const_header = ''': THEORY
     BEGIN 
         IMPORTING matrices@matrices
 '''
 
-const_trailer = "END mlp"
+const_trailer = "END "
 
 const_mat_relu = '''
     reluMat(M: Matrix): {A: MatrixMN(rows(M),columns(M))|
@@ -88,7 +87,6 @@ def genConstraintExpressions(input_vars):
     constraints = ""
     for i in range(input_vars):
         constraints+="\tx"+str(i)+"inreal: TYPE = { r: real | r>=-<TBD> AND r<=<TBD> }\n"
-    print(constraints)
 
     return constraints
 
@@ -102,6 +100,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument("model_path")
 parser.add_argument("-o","--output_vars", default=1, required=False, type=int)
 parser.add_argument("-p","--pvs_output", default=None, required=False)
+parser.add_argument("-n","--name", default="mlp", required=False)
 args = parser.parse_args()
 
 model = torch.load(args.model_path)
@@ -118,7 +117,7 @@ constraints = genConstraintExpressions(input_vars)
 # Emit PVS
 
 pvs_buffer = ""
-pvs_buffer+=const_header
+pvs_buffer+=args.name+const_header
 pvs_buffer+="\n\t"
 for line in lines:
     pvs_buffer+=line+"\n\t"
@@ -132,7 +131,7 @@ pvs_buffer+="\n\t"+const_network
 pvs_buffer+="\t\t\n\t\t"+"".join(sequence)+"\n\n"
 
 pvs_buffer+="\t"+theorem
-pvs_buffer+="\n\n"+const_trailer
+pvs_buffer+="\n\n"+const_trailer+args.name
 
 if args.pvs_output is not None:
     outfile = open(args.pvs_output, "w")

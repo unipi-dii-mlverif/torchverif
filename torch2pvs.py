@@ -5,6 +5,9 @@ import argparse
 
 # Constant blocks
 
+
+
+
 const_header = ''': THEORY
     BEGIN 
         IMPORTING matrices@matrices
@@ -23,30 +26,47 @@ const_relu = "relu(x: real): real = IF x > 0 THEN x ELSE 0 ENDIF"
 const_network = "net(input: Matrix): Matrix ="
 
 
+def toPVSMatrix(tensor):
+    pvs_matrix_entries = []
+    for row in tensor:
+        np_weight = row.detach().numpy()
+        np_str_weight = numpy.char.mod("%f", np_weight)
+        joined_str_weight = ','.join(np_str_weight)
+        pvs_formatted = "(:"+joined_str_weight+":)"
+        pvs_matrix_entries.append(pvs_formatted)
+    pvs_formatted_matrix = "(:"+','.join(pvs_matrix_entries)+":)"
+    return pvs_formatted_matrix
+
 def genMatrixDeclarations(model):
     matrix_declarations = []
     for i,layer in enumerate(model):
         if isinstance(layer, nn.Linear):
             weights = layer.weight
-            
+            bias  = layer.bias
+
+            # Increase bias dimensions by 1 if 1d
+            if len(bias.shape) == 1:
+                bias = torch.Tensor(numpy.array([bias.detach().numpy()]))
+
             # Weights must be transposed to match matrix matrix sizes
             tr_weights = torch.transpose(weights, 0, 1)
 
             w_cols = len(weights)
             w_rows = len(weights[0])
 
-            pvs_matrix_entries = []
-            for row in tr_weights:
-                np_weight = row.detach().numpy()
-                np_str_weight = numpy.char.mod("%f", np_weight)
-                joined_str_weight = ','.join(np_str_weight)
-                pvs_formatted = "(:"+joined_str_weight+":)"
-                pvs_matrix_entries.append(pvs_formatted)
+            b_cols = len(bias)
+            b_rows = len(bias[0])
 
-            pvs_formatted_matrix = "(:"+','.join(pvs_matrix_entries)+":)"
 
-            pvs_fullmatrix_entry = "linear"+str(i)+": MatrixMN("+str(w_rows)+","+str(w_cols)+") = "+pvs_formatted_matrix
-            matrix_declarations.append(pvs_fullmatrix_entry)
+            pvs_formatted_weight = toPVSMatrix(tr_weights)
+            pvs_fullweight_entry = "linear"+str(i)+": MatrixMN("+str(w_rows)+","+str(w_cols)+") = "+pvs_formatted_weight
+
+            pvs_formatted_bias = toPVSMatrix(bias)
+            pvs_fullbias_entry = "linear_bias"+str(i)+": MatrixMN("+str(b_cols)+","+str(b_rows)+") = "+pvs_formatted_bias
+
+
+            matrix_declarations.append(pvs_fullweight_entry)
+            matrix_declarations.append(pvs_fullbias_entry)
     return matrix_declarations
 
 def genNetworkOperationSequence(model):
@@ -58,9 +78,9 @@ def genNetworkOperationSequence(model):
         if isinstance(layer, nn.Linear):
             if i == 0:
                 network_operations.append("input")
-            network_operations.append("*linear"+str(i))
+            network_operations.append("*linear"+str(i)+"+linear_bias"+str(i))
         
-        if isinstance(layer, nn.ReLU):
+        if isinstance(layer, nn.ReLU) or isinstance(layer, nn.LeakyReLU):
 
             # Insert relu at beginning of sequence and close bracket at end of sequence
             network_operations.insert(0,"reluMat(")

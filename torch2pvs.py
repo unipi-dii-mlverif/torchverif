@@ -16,15 +16,21 @@ const_header = ''': THEORY
 const_trailer = "END "
 
 const_mat_relu = '''
-    reluMat(M: Matrix): {A: MatrixMN(rows(M),columns(M))|
-        FORALL (i,j:below(length(M))): entry(A)(i,j) = relu(entry(M)(i,j))}  =
+    reluMat(M: Matrix): MatrixMN(rows(M),columns(M)) =
         form_matrix(LAMBDA (i,j:nat): relu(entry(M)(i,j)), rows(M), columns(M));
+'''
+
+const_mat_lrelu = '''
+    lreluMat(M: Matrix): MatrixMN(rows(M),columns(M)) =
+        form_matrix(LAMBDA (i,j:nat): lrelu(entry(M)(i,j)), rows(M), columns(M));
 '''
 
 const_relu = "relu(x: real): real = IF x > 0 THEN x ELSE 0 ENDIF"
 
 const_network = "net(input: Matrix): Matrix ="
 
+def getLeakyReluString(slope):
+    return "lrelu(x: real): real = IF x > 0 THEN x ELSE {slope}*x ENDIF"
 
 def toPVSMatrix(tensor):
     pvs_matrix_entries = []
@@ -80,10 +86,14 @@ def genNetworkOperationSequence(model):
                 network_operations.append("input")
             network_operations.append("*linear"+str(i)+"+linear_bias"+str(i))
         
-        if isinstance(layer, nn.ReLU) or isinstance(layer, nn.LeakyReLU):
+        if isinstance(layer, nn.ReLU):
 
             # Insert relu at beginning of sequence and close bracket at end of sequence
             network_operations.insert(0,"reluMat(")
+            network_operations.append(")")
+        
+        if isinstance(layer, nn.LeakyReLU):
+            network_operations.insert(0,"lreluMat(")
             network_operations.append(")")
 
     return network_operations
@@ -143,7 +153,11 @@ for line in lines:
     pvs_buffer+=line+"\n\t"
 
 pvs_buffer+="\n\t"+const_relu
+pvs_buffer+="\n\t"+getLeakyReluString(0.1)
+
 pvs_buffer+="\n"+const_mat_relu
+pvs_buffer+="\n"+const_mat_lrelu
+
 
 pvs_buffer+="\n"+constraints
 

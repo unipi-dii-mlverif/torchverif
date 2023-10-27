@@ -11,6 +11,7 @@ import argparse
 const_header = ''': THEORY
     BEGIN 
         IMPORTING matrices@matrices
+        IMPORTING lnexp@exp_series
 '''
 
 const_trailer = "END "
@@ -25,12 +26,28 @@ const_mat_lrelu = '''
         form_matrix(LAMBDA (i,j:nat): lrelu(entry(M)(i,j)), rows(M), columns(M));
 '''
 
+const_mat_tanh = '''
+	e(x: real): real =
+		exp_estimate(x,10)
+
+	tanh(x: real): real =
+		IF x > 0 THEN
+		(e(2*x) - 1) / (e(2*x)+  1)
+		ELSE
+		-(e(-2*x) - 1) / (e(-2*x)+  1)
+		ENDIF
+
+    tanhMat(M: Matrix): MatrixMN(rows(M),columns(M)) =
+        form_matrix(LAMBDA (i,j:nat): tanh(entry(M)(i,j)), rows(M), columns(M));
+
+'''
+
 const_relu = "relu(x: real): real = IF x > 0 THEN x ELSE 0 ENDIF"
 
 const_network = "net(input: Matrix): Matrix ="
 
 def getLeakyReluString(slope):
-    return "lrelu(x: real): real = IF x > 0 THEN x ELSE {slope}*x ENDIF"
+    return f'lrelu(x: real): real = IF x > 0 THEN x ELSE {slope}*x ENDIF'
 
 def toPVSMatrix(tensor):
     pvs_matrix_entries = []
@@ -96,6 +113,10 @@ def genNetworkOperationSequence(model):
             network_operations.insert(0,"lreluMat(")
             network_operations.append(")")
 
+        if isinstance(layer, nn.Tanh):
+            network_operations.insert(0,"tanhMat(")
+            network_operations.append(")")
+
     return network_operations
 
 def genTheorem(name, input_vars, output_vars):
@@ -157,7 +178,7 @@ pvs_buffer+="\n\t"+getLeakyReluString(0.1)
 
 pvs_buffer+="\n"+const_mat_relu
 pvs_buffer+="\n"+const_mat_lrelu
-
+pvs_buffer+="\n"+const_mat_tanh
 
 pvs_buffer+="\n"+constraints
 

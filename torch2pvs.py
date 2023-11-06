@@ -7,7 +7,6 @@ import argparse
 
 
 
-
 const_header = ''': THEORY
     BEGIN 
         IMPORTING matrices@matrices
@@ -168,6 +167,7 @@ constraints = genConstraintExpressions(input_vars)
 # Emit PVS
 
 pvs_buffer = ""
+pvs_buffer+= "%"+str(model).replace("\n","\n%")+"\n"
 pvs_buffer+=args.name+const_header
 pvs_buffer+="\n\t"
 for line in lines:

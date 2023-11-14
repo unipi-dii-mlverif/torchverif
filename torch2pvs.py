@@ -26,19 +26,14 @@ const_mat_lrelu = '''
 '''
 
 const_mat_tanh = '''
-	e(x: real): real =
-		exp_estimate(x,10)
+	exp_deff: LEMMA
+		FORALL (x:real): exp(x) = exp_estimate(x,10)
 
-	tanh(x: real): real =
-		IF x > 0 THEN
-		(e(2*x) - 1) / (e(2*x)+  1)
-		ELSE
-		-(e(-2*x) - 1) / (e(-2*x)+  1)
-		ENDIF
+	sigmoid(x: real): real = 
+		1/(1+exp(-x))
 
-    tanhMat(M: Matrix): MatrixMN(rows(M),columns(M)) =
-        form_matrix(LAMBDA (i,j:nat): tanh(entry(M)(i,j)), rows(M), columns(M));
-
+	tanh(x: real): real = 
+		2*sigmoid(2*x) - 1
 '''
 
 const_relu = "relu(x: real): real = IF x > 0 THEN x ELSE 0 ENDIF"

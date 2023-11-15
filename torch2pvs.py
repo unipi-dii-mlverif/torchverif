@@ -26,8 +26,13 @@ const_mat_lrelu = '''
 '''
 
 const_mat_tanh = '''
+  	exp_estimate_proper(x: real, n: nat): real =
+		IF x >= 0 THEN exp_estimate(x,n)
+		ELSE 1/exp_estimate(-x,n)
+		ENDIF
+
 	exp_deff: LEMMA
-		FORALL (x:real): exp(x) = exp_estimate(x,10)
+		FORALL (x:real): exp(x) = exp_estimate_proper(x,10)
 
 	sigmoid(x: real): real = 
 		1/(1+exp(-x))

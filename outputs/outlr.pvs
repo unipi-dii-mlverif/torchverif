@@ -12,9 +12,14 @@ cruisenn_lr: THEORY
     reluMat(M: Matrix): MatrixMN(rows(M),columns(M))  =
         form_matrix(LAMBDA (i,j:nat): relu(entry(M)(i,j)), rows(M), columns(M));
 
-	x0inreal: TYPE = { r: real | r>= 20 AND r<= 25 }
-	x1inreal: TYPE = { r: real | r>= 30 AND r<= 50 }
-	x2inreal: TYPE = { r: real | r>= 0 AND r<=2 }
+	%ego velocity
+	x0inreal: TYPE = { r: real | r>= 20 AND r<= 25 } 
+	
+	%rel position
+	x1inreal: TYPE = { r: real | r>= 0 AND r<= 50 }
+	
+	%rel velocity
+	x2inreal: TYPE = { r: real | r>= -2 AND r<=2 }
 
 
 	net(input: Matrix): Matrix =		
@@ -29,9 +34,16 @@ cruisenn_lr: THEORY
 	value_tester: LEMMA
 		entry( net( (:(: 5,5,5 :):) ) )(0,0) = 2
 
+	% @QED should_decelerate proved by federico on Mon, 13 Nov 2023 14:03:24 GMT
+	should_decelerate: THEOREM
+		FORALL (x0in: x0inreal,x1in: x1inreal,x2in: x2inreal):
+			x1in < 35 IMPLIES entry( net( (:(:x0in,x1in,x2in:):) ) )(0,0) <= 0 
+	
+
+
 	% @QED network_bounds proved by federico on Thu, 26 Oct 2023 06:47:45 GMT
 	network_bounds: THEOREM
 		FORALL (x0in: x0inreal,x1in: x1inreal,x2in: x2inreal):
-			entry( net( (:(:x0in,x1in,x2in:):) ) )(0,0) > -200
+			entry( net( (:(:x0in,x1in,x2in:):) ) )(0,0) > -3
 
 END cruisenn_lr

@@ -1,6 +1,7 @@
 cruisenn_tanh: THEORY
     BEGIN 
         IMPORTING matrices@matrices
+		IMPORTING lnexp@ln_exp
 		IMPORTING lnexp@exp_series
 
 	linear0: MatrixMN(3,9) = (:(:-0.599691,0.364658,-0.637507,0.412712,-0.097102,-0.279176,-0.599833,-0.376312,0.336222:),(:0.146966,-0.220218,0.385144,0.351899,0.053985,0.574442,-0.570637,0.322523,-0.260302:),(:1.514268,2.303468,-0.648349,-0.090035,1.320617,-0.777853,-0.099061,-2.277836,0.457567:):)
@@ -8,22 +9,49 @@ cruisenn_tanh: THEORY
 	linear2: MatrixMN(9,1) = (:(:1.765456:),(:0.455343:),(:1.145311:),(:-0.512913:),(:0.696255:),(:-0.532288:),(:0.655821:),(:1.223822:),(:-1.846871:):)
 	linear_bias2: MatrixMN(1,1) = (:(:-0.498080:):)
 
-	e(x: real): real =
-		exp_estimate(x,10)
+	exp_simp: LEMMA
+		FORALL (a: real, b: real, c: real, d: real):
+			exp(a+b+c+d)= exp(a)*exp(b)*exp(c)*exp(d)
 
-	tanh(x: real): real =
-		IF x > 0 THEN
-		(e(2*x) - 1) / (e(2*x)+  1)
-		ELSE
-		-(e(-2*x) - 1) / (e(-2*x)+  1)
+
+  	exp_estimate_proper(x: real, n: nat): real=
+		IF x >= 0 THEN exp_estimate(x,n)
+		ELSE 1/exp_estimate(-x,n)
 		ENDIF
+
+	% @QED exp_inv_estimate proved by federico on Wed, 15 Nov 2023 09:44:11 GMT
+	exp_inv_estimate: LEMMA
+		FORALL(x: real): exp_estimate_proper(x,10) = 1/exp_estimate_proper(-x,10)
+
+
+
+	exp_deff: LEMMA
+		FORALL (x:real): exp(x) = exp_estimate_proper(x,10)
+
+   	exp_scali: LEMMA 
+		FORALL(x:real, i: real): exp(i*x) = exp(i)^x
+
+
+
+
+	sigmoid(x: real): real = 
+		exp(x)/(1+exp(x))
+
+	tanh(x: real): real = 
+		2*sigmoid(2*x) - 1
 
     tanhMat(M: Matrix): MatrixMN(rows(M),columns(M)) =
         form_matrix(LAMBDA (i,j:nat): tanh(entry(M)(i,j)), rows(M), columns(M));
 
-	x0inreal: TYPE = { r: real | r>=-5 AND r<=5 }
-	x1inreal: TYPE = { r: real | r>=-5 AND r<=5 }
-	x2inreal: TYPE = { r: real | r>=-5 AND r<=5 }
+
+	%ego velocity
+	x0inreal: TYPE = { r: real | r>= 20 AND r<= 25 } 
+	
+	%rel position
+	x1inreal: TYPE = { r: real | r>= 0 AND r<= 50 }
+	
+	%rel velocity
+	x2inreal: TYPE = { r: real | r>= -2 AND r<=2 }
 
 	net(input: Matrix): Matrix =		
 		tanhMat(input*linear0+linear_bias0)*linear2+linear_bias2
@@ -31,6 +59,13 @@ cruisenn_tanh: THEORY
 	% @QED value_tester proved by federico on Fri, 27 Oct 2023 19:23:38 GMT
 	value_tester: LEMMA
 		entry( net( (:(:2,2,2:):) ) )(0,0) >= -5
+
+	% @QED should_decelerate proved by federico on Wed, 15 Nov 2023 09:08:33 GMT
+	should_decelerate: THEOREM
+		FORALL (x0in: x0inreal,x1in: x1inreal,x2in: x2inreal):
+			x1in < 1 IMPLIES entry( net( (:(:25,5,2:):) ) )(0,0) <= 0 
+	
+
 
 	network_bounds: THEOREM
 		FORALL (x0in: x0inreal,x1in: x1inreal,x2in: x2inreal):

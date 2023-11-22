@@ -1,0 +1,95 @@
+exp_negative: THEORY
+  BEGIN 
+		IMPORTING lnexp@ln_exp
+		IMPORTING lnexp@exp_series
+
+    
+  % @QED neg_is_reciprocate proved by federico on Mon, 13 Nov 2023 09:29:26 GMT
+    neg_is_reciprocate: THEOREM
+    FORALL(x: real): exp(-x) = 1/exp(x)  
+
+	even(n: int): INDUCTIVE bool = n = 0 OR n = 2 OR even(n - 2) OR even(n+2)
+	odd(n: int): bool = NOT even(n)
+
+	exp_est_gt0: AXIOM
+		FORALL(x: real, n: nat): exp_estimate(x,n) > 0
+
+	exp_estimate_proper(x: real, n: nat): real=
+		IF x >= 0 THEN exp_estimate(x,n)
+		ELSE 1/exp_estimate(-x,n)
+		ENDIF
+
+    exp_deff: LEMMA
+		FORALL (x:real): exp(x) = exp_estimate_proper(x,10)
+
+	sigmoid(x: real): real = 
+		exp(x)/(1+exp(x)) 
+  
+	tanh(x: real): real = 
+		-1+2*sigmoid(2*x)
+
+	% @QED exp_rev proved by federico on Wed, 22 Nov 2023 11:06:59 GMT
+	exp_rev: LEMMA
+		FORALL(x: real): exp(-x) = 1/exp(x)
+
+	x_n: LEMMA
+		FORALL(x: real, n:nat): x >= 0 IMPLIES x^n>=0
+
+	x_n_even: LEMMA
+		FORALL(x: real, n: nat): even(n) IMPLIES x^n>=0
+
+	x_n_odd: LEMMA
+		FORALL(x: negreal, n: nat): odd(n) IMPLIES x^n < 0
+
+	% @QED exp_gt_1 proved by federico on Thu, 16 Nov 2023 08:51:31 GMT
+	exp_gt_1: LEMMA
+		FORALL(x: real): x > 0 IMPLIES exp(x) > 1
+
+	% @QED exp_lt_1 proved by federico on Wed, 22 Nov 2023 10:30:44 GMT
+	exp_lt_1: LEMMA
+		FORALL(x: negreal): exp(x) < 1
+	
+	% @QED sigmoid_gt_1h proved by federico on Wed, 22 Nov 2023 11:09:13 GMT
+	sigmoid_gt_1h: THEOREM
+	FORALL(x: real): x > 0 IMPLIES sigmoid(x) > 1/2
+
+	% @QED tanh_gt_0 proved by federico on Thu, 16 Nov 2023 08:55:07 GMT
+	tanh_gt_0: THEOREM
+	FORALL(x: real): x > 0 IMPLIES tanh(x) > 0
+  
+	x_n_ordering: LEMMA
+	FORALL(x: real, y:real, n: nat): x>y IMPLIES x^n >= y^n
+
+	% @QED x_sign_ordering proved by federico on Wed, 22 Nov 2023 10:58:11 GMT
+	x_sign_ordering: LEMMA
+	FORALL(x: real, y: real): x>y IMPLIES -y > -x
+
+	% @QED pos_exp_ordering proved by federico on Wed, 22 Nov 2023 10:41:49 GMT
+	pos_exp_ordering: LEMMA
+	FORALL(x: posreal, y: posreal): x >= y IMPLIES exp(x) >= exp(y)
+
+	% @QED neg_exp_ordering proved by federico on Wed, 22 Nov 2023 11:08:32 GMT
+	neg_exp_ordering: LEMMA
+	FORALL(x: negreal, y: negreal): x >= y IMPLIES exp(x) >= exp(y)
+
+	% @QED mix_exp_ordering proved by federico on Wed, 22 Nov 2023 10:32:32 GMT
+	mix_exp_ordering: LEMMA
+	FORALL(x:posreal, y:negreal): exp(x) > exp(y)
+
+	% @QED exp_x0 proved by federico on Wed, 22 Nov 2023 10:31:31 GMT
+	exp_x0: LEMMA
+	FORALL(x: real, y:negreal): x = 0  IMPLIES exp(x) > exp(y)
+
+	% @QED exp_y0 proved by federico on Wed, 22 Nov 2023 10:13:08 GMT
+	exp_y0: LEMMA
+	FORALL(x: posreal, y: real): y = 0 IMPLIES exp(x) > exp(y)
+
+	% @QED exp_ordering proved by federico on Wed, 22 Nov 2023 10:12:12 GMT
+	exp_ordering: LEMMA
+	FORALL(x: real, y: real): x > y IMPLIES exp(x) > exp(y)
+
+	sigmoid_ordering: LEMMA
+	FORALL(x: real, y:real): x > y IMPLIES sigmoid(x) > sigmoid(y)
+
+
+  END exp_negative

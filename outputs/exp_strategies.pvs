@@ -14,14 +14,13 @@ exp_strategies: THEORY
 		ELSE 1/exp_estimate(-x,n)
 		ENDIF
 
-    exp_deff: AXIOM
+    	exp_deff: AXIOM
 		FORALL (x:real): exp(x) = exp_estimate_proper(x,10)
 
 	exp_sum_arg: LEMMA
 		FORALL(x: real, y: real): exp(x+y) = exp(x)*exp(y)
 
-	sigmoid(x: real): real = 
-		exp(x)/(1+exp(x)) 
+	sigmoid: [ real -> real] 
 
   
 	tanh(x: real): real = 
@@ -32,7 +31,11 @@ exp_strategies: THEORY
 	sigmoid_rewrite: LEMMA
 		FORALL (x: real): exp(x)/(1+exp(x)) = sigmoid(x)				
 
-	% @QED exp_rev proved by federico on Wed, 22 Nov 2023 11:06:59 GMT
+
+	sigmoid_rewrite_ext: AXIOM
+ 	        FORALL (x: real): sigmoid(x) = x
+
+	% @Qed exp_rev proved by federico on Wed, 22 Nov 2023 11:06:59 GMT
 	exp_rev: LEMMA
 		FORALL(x: real): exp(-x) = 1/exp(x)
 

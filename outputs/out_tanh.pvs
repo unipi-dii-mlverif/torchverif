@@ -9,12 +9,6 @@ cruisenn_tanh: THEORY
 	linear2: MatrixMN(9,1) = (:(:1.765456:),(:0.455343:),(:1.145311:),(:-0.512913:),(:0.696255:),(:-0.532288:),(:0.655821:),(:1.223822:),(:-1.846871:):)
 	linear_bias2: MatrixMN(1,1) = (:(:-0.498080:):)
 
-  	exp_estimate_proper(x: real, n: nat): real=
-		IF x >= 0 THEN exp_estimate(x,n)
-		ELSE 1/exp_estimate(-x,n)
-		ENDIF
-
-
 
 
 
@@ -22,7 +16,7 @@ cruisenn_tanh: THEORY
 	
 	
 
-    tanhMat(M: Matrix): MatrixMN(rows(M),columns(M)) =
+    	tanhMat(M: Matrix): MatrixMN(rows(M),columns(M)) =
         form_matrix(LAMBDA (i,j:nat): tanh(entry(M)(i,j)), rows(M), columns(M));
 
 

@@ -3,42 +3,24 @@ cruisenn_tanh: THEORY
         IMPORTING matrices@matrices
 		IMPORTING lnexp@ln_exp
 		IMPORTING lnexp@exp_series
-
+		IMPORTING exp_strategies
 	linear0: MatrixMN(3,9) = (:(:-0.599691,0.364658,-0.637507,0.412712,-0.097102,-0.279176,-0.599833,-0.376312,0.336222:),(:0.146966,-0.220218,0.385144,0.351899,0.053985,0.574442,-0.570637,0.322523,-0.260302:),(:1.514268,2.303468,-0.648349,-0.090035,1.320617,-0.777853,-0.099061,-2.277836,0.457567:):)
 	linear_bias0: MatrixMN(1,9) = (:(:-0.309031,-0.374588,-0.811104,-0.007218,0.328503,0.062669,-0.033401,0.213295,1.080161:):)
 	linear2: MatrixMN(9,1) = (:(:1.765456:),(:0.455343:),(:1.145311:),(:-0.512913:),(:0.696255:),(:-0.532288:),(:0.655821:),(:1.223822:),(:-1.846871:):)
 	linear_bias2: MatrixMN(1,1) = (:(:-0.498080:):)
-
-	exp_simp: LEMMA
-		FORALL (a: real, b: real, c: real, d: real):
-			exp(a+b+c+d)= exp(a)*exp(b)*exp(c)*exp(d)
-
 
   	exp_estimate_proper(x: real, n: nat): real=
 		IF x >= 0 THEN exp_estimate(x,n)
 		ELSE 1/exp_estimate(-x,n)
 		ENDIF
 
-	% @QED exp_inv_estimate proved by federico on Wed, 15 Nov 2023 09:44:11 GMT
-	exp_inv_estimate: LEMMA
-		FORALL(x: real): exp_estimate_proper(x,10) = 1/exp_estimate_proper(-x,10)
-
-
-
-	exp_deff: LEMMA
-		FORALL (x:real): exp(x) = exp_estimate_proper(x,10)
-
-   	exp_scali: LEMMA 
-		FORALL(x:real, i: real): exp(i*x) = exp(i)^x
 
 
 
 
-	sigmoid(x: real): real = 
-		exp(x)/(1+exp(x))
 
-	tanh(x: real): real = 
-		2*sigmoid(2*x) - 1
+	
+	
 
     tanhMat(M: Matrix): MatrixMN(rows(M),columns(M)) =
         form_matrix(LAMBDA (i,j:nat): tanh(entry(M)(i,j)), rows(M), columns(M));
@@ -63,7 +45,19 @@ cruisenn_tanh: THEORY
 	% @QED should_decelerate proved by federico on Wed, 15 Nov 2023 09:08:33 GMT
 	should_decelerate: THEOREM
 		FORALL (x0in: x0inreal,x1in: x1inreal,x2in: x2inreal):
-			x1in < 1 IMPLIES entry( net( (:(:25,5,2:):) ) )(0,0) <= 0 
+			x1in < 20 IMPLIES entry( net( (:(:25,x1in,-2:):) ) )(0,0) <= 0 
+	
+
+	lemma_n: LEMMA
+		FORALL (x0in: x0inreal,x1in: x1inreal,x2in: x2inreal):
+		x1in < 20 IMPLIES 
+		-221751/62500 + 1846871/500000 * sigmoid(8570577/500000 - 130151/250000*x1in) < -221751/62500 + 1846871/500000
+
+        lemma_ns: LEMMA
+		FORALL (x0in: x0inreal,x1in: x1inreal,x2in: x2inreal):
+		x1in < 20 IMPLIES 
+		-221751/62500 - 1846871/500000 * sigmoid(8570577/500000 - 130151/250000*x1in) > -221751/62500 - 1846871/500000
+
 	
 
 

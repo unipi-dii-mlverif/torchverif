@@ -1,12 +1,7 @@
-exp_negative: THEORY
+exp_strategies: THEORY
   BEGIN 
 		IMPORTING lnexp@ln_exp
 		IMPORTING lnexp@exp_series
-
-    
-  % @QED neg_is_reciprocate proved by federico on Mon, 13 Nov 2023 09:29:26 GMT
-    neg_is_reciprocate: THEOREM
-    FORALL(x: real): exp(-x) = 1/exp(x)  
 
 	even(n: int): INDUCTIVE bool = n = 0 OR n = 2 OR even(n - 2) OR even(n+2)
 	odd(n: int): bool = NOT even(n)
@@ -19,14 +14,23 @@ exp_negative: THEORY
 		ELSE 1/exp_estimate(-x,n)
 		ENDIF
 
-    exp_deff: LEMMA
+    exp_deff: AXIOM
 		FORALL (x:real): exp(x) = exp_estimate_proper(x,10)
+
+	exp_sum_arg: LEMMA
+		FORALL(x: real, y: real): exp(x+y) = exp(x)*exp(y)
 
 	sigmoid(x: real): real = 
 		exp(x)/(1+exp(x)) 
+
   
 	tanh(x: real): real = 
 		-1+2*sigmoid(2*x)
+
+
+	% @QED sigmoid_rewrite proved by federico on Thu, 23 Nov 2023 15:34:37 GMT
+	sigmoid_rewrite: LEMMA
+		FORALL (x: real): exp(x)/(1+exp(x)) = sigmoid(x)				
 
 	% @QED exp_rev proved by federico on Wed, 22 Nov 2023 11:06:59 GMT
 	exp_rev: LEMMA
@@ -53,12 +57,25 @@ exp_negative: THEORY
 	sigmoid_gt_1h: THEOREM
 	FORALL(x: real): x > 0 IMPLIES sigmoid(x) > 1/2
 
+	% @QED sigmoid_lt_1 proved by federico on Thu, 23 Nov 2023 17:00:30 GMT
+	sigmoid_lt_1: LEMMA
+	FORALL(x: real): sigmoid(x) < 1
+
+	% @QED sigmoid_scale_lt_a proved by federico on Thu, 23 Nov 2023 17:02:49 GMT
+	sigmoid_scale_lt_a: LEMMA
+	FORALL(x:real, a: posreal): a*sigmoid(x) < a
+
+	% @QED sigmoid_scale_lt_an proved by federico on Thu, 23 Nov 2023 17:03:47 GMT
+	sigmoid_scale_lt_an: LEMMA
+	FORALL(x:real, a: negreal): a*sigmoid(x) > a	
+
 	% @QED tanh_gt_0 proved by federico on Thu, 16 Nov 2023 08:55:07 GMT
 	tanh_gt_0: THEOREM
 	FORALL(x: real): x > 0 IMPLIES tanh(x) > 0
   
-	x_n_ordering: LEMMA
-	FORALL(x: real, y:real, n: nat): x>y IMPLIES x^n >= y^n
+	% @QED x_n_ordering_pos proved by federico on Thu, 23 Nov 2023 15:16:43 GMT
+	x_n_ordering_pos: LEMMA
+	FORALL(x: posreal, y:posreal, n: nat): x>y IMPLIES x^n >= y^n
 
 	% @QED x_sign_ordering proved by federico on Wed, 22 Nov 2023 10:58:11 GMT
 	x_sign_ordering: LEMMA
@@ -88,8 +105,9 @@ exp_negative: THEORY
 	exp_ordering: LEMMA
 	FORALL(x: real, y: real): x > y IMPLIES exp(x) > exp(y)
 
+	% @QED sigmoid_ordering proved by federico on Thu, 23 Nov 2023 15:07:54 GMT
 	sigmoid_ordering: LEMMA
 	FORALL(x: real, y:real): x > y IMPLIES sigmoid(x) > sigmoid(y)
 
 
-  END exp_negative
+  END exp_strategies

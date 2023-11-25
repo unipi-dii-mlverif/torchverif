@@ -39,24 +39,18 @@ cruisenn_tanh: THEORY
 	% @QED should_decelerate proved by federico on Wed, 15 Nov 2023 09:08:33 GMT
 	should_decelerate: THEOREM
 		FORALL (x0in: x0inreal,x1in: x1inreal,x2in: x2inreal):
-			x1in < 20 IMPLIES entry( net( (:(:25,x1in,-2:):) ) )(0,0) <= 0 
-	
-
-	lemma_n: LEMMA
-		FORALL (x0in: x0inreal,x1in: x1inreal,x2in: x2inreal):
-		x1in < 20 IMPLIES 
-		-221751/62500 + 1846871/500000 * sigmoid(8570577/500000 - 130151/250000*x1in) < -221751/62500 + 1846871/500000
-
-        lemma_ns: LEMMA
-		FORALL (x0in: x0inreal,x1in: x1inreal,x2in: x2inreal):
-		x1in < 20 IMPLIES 
-		-221751/62500 - 1846871/500000 * sigmoid(8570577/500000 - 130151/250000*x1in) > -221751/62500 - 1846871/500000
-
+			x1in < 20 IMPLIES entry( net( (:(:x0in,x1in,x2in:):) ) )(0,0) <= 0 
 	
 
 
-	network_bounds: THEOREM
+
+	network_lb: THEOREM
 		FORALL (x0in: x0inreal,x1in: x1inreal,x2in: x2inreal):
-			entry( net( (:(:x0in,x1in,x2in:):) ) )(0,0) >= -10
+			entry( net( (:(:x0in,x1in,x2in:):) ) )(0,0) > -10
+
+	network_ub: THEOREM
+		FORALL (x0in: x0inreal,x1in: x1inreal,x2in: x2inreal):
+			entry( net( (:(:x0in,x1in,x2in:):) ) )(0,0) < 9
+
 
 END cruisenn_tanh

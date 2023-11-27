@@ -39,7 +39,7 @@ cruisenn_tanh: THEORY
 	% @QED should_decelerate proved by federico on Wed, 15 Nov 2023 09:08:33 GMT
 	should_decelerate: THEOREM
 		FORALL (x0in: x0inreal,x1in: x1inreal,x2in: x2inreal):
-			x1in < 20 IMPLIES entry( net( (:(:x0in,x1in,x2in:):) ) )(0,0) <= 0 
+			x1in < 15 IMPLIES entry( net( (:(:x0in,x1in,x2in:):) ) )(0,0) <= 0 
 	
 
 

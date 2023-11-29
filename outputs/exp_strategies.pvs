@@ -25,12 +25,23 @@ exp_strategies: THEORY
   
 %	tanh_rewrite: LEMMA
 %	FORALL(x:real): tanh(x) = -1+2*sigmoid(2*x)
-
+	
 	tanh(x:real): real = -1+2*sigmoid(2*x)
+	epoly: [ real -> real]
 
+	epoly_rewrite: LEMMA
+		       FORALL(x:real): epoly(x) = 1+(x^2)/2
 	% @QED sigmoid_rewrite proved by federico on Thu, 23 Nov 2023 15:34:37 GMT
 	sigmoid_rewrite: LEMMA
 		FORALL (x: real): sigmoid(x)=exp(x)/(1+exp(x)) 				
+
+	sigmoid_approx_p: LEMMA
+		FORALL (x: posreal): sigmoid(x) =  epoly(x)/(1+epoly(x)) 
+
+
+	sigmoid_approx_n: LEMMA
+		FORALL (x: negreal): sigmoid(x) =  1-epoly(-x)/(1+epoly(-x)) 
+		       	
 
 
 	sigmoid_rewrite_ub: AXIOM
@@ -39,18 +50,9 @@ exp_strategies: THEORY
 	sigmoid_rewrite_lb: AXIOM
 	 	FORALL (x: real): sigmoid(x) = 0
 
-	sigmoid_ub_pos: AXIOM
-		FORALL (x: real, a: posreal): a*sigmoid(x) = a
+	sigmoid_rewrite_h: AXIOM
+	        FORALL (x:real): x <=0 IMPLIES sigmoid(x) = 1/2
 
-	sigmoid_ub_neg: AXIOM
-		FORALL (x: real, a:posreal): -a*sigmoid(x) = 0
-
-	sigmoid_lb_pos: AXIOM
-		FORALL (x:real, a:posreal): a*sigmoid(x) = 0
-
-	sigmoid_lb_neg: AXIOM
-		FORALL (x:real, a:posreal): -a*sigmoid(x) = -a
-	
 	% @Qed exp_rev proved by federico on Wed, 22 Nov 2023 11:06:59 GMT
 	exp_rev: LEMMA
 		FORALL(x: real): exp(-x) = 1/exp(x)
@@ -72,13 +74,15 @@ exp_strategies: THEORY
 	exp_lt_1: LEMMA
 		FORALL(x: negreal): exp(x) < 1
 
-	simgoid_bound_x: AXIOM
-	        FORALL (x: real): x > 1/2 IMPLIES sigmoid(x) < x
+
 
 
 	% @QED sigmoid_gt_1h proved by federico on Wed, 22 Nov 2023 11:09:13 GMT
 	sigmoid_gt_1h: THEOREM
-	FORALL(x: real): x > 0 IMPLIES sigmoid(x) > 1/2
+	FORALL(x: real): x >= 0 IMPLIES sigmoid(x) >= 1/2
+
+	sigmoid_lt_1h: THEOREM
+	FORALL(x: real): x < 0 IMPLIES sigmoid(x) < 1/2
 
 	% @QED sigmoid_lt_1 proved by federico on Thu, 23 Nov 2023 17:00:30 GMT
 	sigmoid_lt_1: LEMMA
@@ -131,6 +135,17 @@ exp_strategies: THEORY
 	% @QED sigmoid_ordering proved by federico on Thu, 23 Nov 2023 15:07:54 GMT
 	sigmoid_ordering: LEMMA
 	FORALL(x: real, y:real): x > y IMPLIES sigmoid(x) > sigmoid(y)
+
+
+	sigmoid_lb_p: LEMMA
+		      FORALL(x: posreal):
+		      sigmoid(x) = x/(1+x) 
+
+	sigmoid_ub_n: LEMMA
+		      FORALL(x: negreal):
+		      sigmoid(x) = 1+x/(1-x) 
+		 
+
 
 
   END exp_strategies

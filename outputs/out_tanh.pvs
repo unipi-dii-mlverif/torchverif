@@ -36,21 +36,51 @@ cruisenn_tanh: THEORY
 	value_tester: LEMMA
 		entry( net( (:(:2,2,2:):) ) )(0,0) >= -5
 
+
+	
+
 	% @QED should_decelerate proved by federico on Wed, 15 Nov 2023 09:08:33 GMT
 	should_decelerate: THEOREM
 		FORALL (x0in: x0inreal,x1in: x1inreal,x2in: x2inreal):
-			x1in < 15 IMPLIES entry( net( (:(:x0in,x1in,x2in:):) ) )(0,0) <= 0 
+			x1in < 7 IMPLIES entry( net( (:(:x0in,x1in,x2in:):) ) )(0,0) <= 0 
 	
 
 
 
 	network_lb: THEOREM
-		FORALL (x0in: x0inreal,x1in: x1inreal,x2in: x2inreal):
+		FORALL (x0in: real,x1in: real,x2in: real):
 			entry( net( (:(:x0in,x1in,x2in:):) ) )(0,0) > -10
 
 	network_ub: THEOREM
-		FORALL (x0in: x0inreal,x1in: x1inreal,x2in: x2inreal):
+		FORALL (x0in: real,x1in: real,x2in: real):
 			entry( net( (:(:x0in,x1in,x2in:):) ) )(0,0) < 9
 
+
+%  |-------
+%{1}   -221751/62500 -
+%       1846871/500000 *
+%        sigmoid(1080161/500000 - 130151/250000 * x1in +168111/250000 * x0in  + 457567/500000 * x2in)
+%       -
+%       512913/500000 * sigmoid(-3609/250000 - 18007/100000 * x2in + 51589/62500 * x0in + 351899/500000 * x1in)
+%       -
+%       16634/15625 * sigmoid(62669/500000 - 777853/500000 * x2in - 34897/62500 * x0in +287221/250000 * x1in)
+%       +
+%       110341/31250 * sigmoid(-309031/500000 - 599691/500000 * x0in + 73483/250000 * x1in  + 378567/125000 * x2in)
+%       +
+%       139251/100000 * sigmoid(328503/500000 - 48551/250000 * x0in + 10797/100000 * x1in + 1320617/500000 * x2in)
+%       +
+%       455343/500000 *  sigmoid(-93647/125000 - 110109/250000 * x1in + 182329/250000 * x0in+ 575867/125000 * x2in)
+%       +
+%       611911/250000 *  sigmoid(42659/100000 - 569459/125000 * x2in - 47039/62500 * x0in + 322523/500000 * x1in)
+%       +
+%       655821/500000 *  sigmoid(-33401/500000 - 599833/500000 * x0in - 570637/500000 * x1in - 99061/500000 * x2in)
+%       +
+%       1145311/500000 * sigmoid(-25347/15625 - 648349/500000 * x2in - 637507/500000 * x0in + 48143/62500 * x1in)
+%       <= 0
+
+	sigmoid_1_ub: LEMMA
+		      FORALL(x0in: x0inreal,x1in: x1inreal,x2in: x2inreal):
+		      x1in < 20 IMPLIES
+		      sigmoid(-1080161/500000 - 130151/250000 * x1in -168111/250000 * (25)  + 457567/500000 * (-2)) <= 8/9
 
 END cruisenn_tanh

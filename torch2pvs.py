@@ -16,40 +16,24 @@ const_header = ''': THEORY
 const_trailer = "END "
 
 const_mat_relu = '''
-    reluMat(M: Matrix): MatrixMN(rows(M),columns(M)) =
-        form_matrix(LAMBDA (i,j:nat): relu(entry(M)(i,j)), rows(M), columns(M));
+    act(M: Matrix): MatrixMN(rows(M),columns(M)) =
+        form_matrix(LAMBDA (i,j:nat): actFun(entry(M)(i,j)), rows(M), columns(M));
 '''
 
-const_mat_lrelu = '''
-    lreluMat(M: Matrix): MatrixMN(rows(M),columns(M)) =
-        form_matrix(LAMBDA (i,j:nat): lrelu(entry(M)(i,j)), rows(M), columns(M));
-'''
-
-const_mat_tanh = '''
-  	exp_estimate_proper(x: real, n: nat): real =
-		IF x >= 0 THEN exp_estimate(x,n)
-		ELSE 1/exp_estimate(-x,n)
-		ENDIF
-
-	exp_deff: LEMMA
-		FORALL (x:real): exp(x) = exp_estimate_proper(x,10)
-
-	sigmoid(x: real): real = 
-		1/(1+exp(-x))
-
-	tanh(x: real): real = 
-		2*sigmoid(2*x) - 1
-'''
-
-const_relu = "relu(x: real): real = IF x > 0 THEN x ELSE 0 ENDIF"
 
 const_network = "net(input: Matrix): Matrix ="
 
 
-sym_vars = []
+sym_vars = {}
 
 def getLeakyReluString(slope):
     return f'lrelu(x: real): real = IF x > 0 THEN x ELSE {slope}*x ENDIF'
+
+def genAxiomsFromSymVars():
+    axioms = []
+    for k in sym_vars.keys():
+        axioms.append(k+"_ax: AXIOM "+k+"="+str(sym_vars[k]))
+    return axioms
 
 def toPVSMatrix(tensor):
     pvs_matrix_entries = []
@@ -68,15 +52,15 @@ def toPVSSymMatrix(tensor, prefix):
         np_weight = row.detach().numpy()
         weight_num = len(np_weight)
         weight_syms = []
-        for i in range(weight_num):
+        for i,w in enumerate(np_weight):
             weight_syms.append(prefix+str(r)+str(i))
-            sym_vars.append(prefix+str(r)+str(i))
+            sym_vars[(prefix+str(r)+str(i))] = w
         joined_str_weight = ','.join(weight_syms)
         pvs_formatted = "(:"+joined_str_weight+":)"
         pvs_matrix_entries.append(pvs_formatted)
         
     pvs_formatted_matrix = "(:"+','.join(pvs_matrix_entries)+":)"
-    print(pvs_formatted_matrix)
+    
     return pvs_formatted_matrix    
 
 def genMatrixDeclarations(model, sym=False):
@@ -184,6 +168,8 @@ theorem = genTheorem("network_bounds",input_vars,args.output_vars)
 
 constraints = genConstraintExpressions(input_vars)
 
+wb_axioms = genAxiomsFromSymVars()
+
 # Emit PVS
 
 pvs_buffer = ""
@@ -191,18 +177,16 @@ pvs_buffer+= "%"+str(model).replace("\n","\n%")+"\n"
 pvs_buffer+=args.name+const_header
 
 
-pvs_buffer+="\n\t" + ",".join(sym_vars)+": VAR real"
+pvs_buffer+="\n\t" + ",".join(sym_vars.keys())+": VAR real"
+pvs_buffer+="\n\t" + "\n\t".join(wb_axioms)
 
 pvs_buffer+="\n\t"
 for line in lines:
     pvs_buffer+=line+"\n\t"
 
-pvs_buffer+="\n\t"+const_relu
-pvs_buffer+="\n\t"+getLeakyReluString(0.1)
 
 pvs_buffer+="\n"+const_mat_relu
-pvs_buffer+="\n"+const_mat_lrelu
-pvs_buffer+="\n"+const_mat_tanh
+
 
 pvs_buffer+="\n"+constraints
 

@@ -45,6 +45,9 @@ const_relu = "relu(x: real): real = IF x > 0 THEN x ELSE 0 ENDIF"
 
 const_network = "net(input: Matrix): Matrix ="
 
+
+sym_vars = []
+
 def getLeakyReluString(slope):
     return f'lrelu(x: real): real = IF x > 0 THEN x ELSE {slope}*x ENDIF'
 
@@ -59,7 +62,24 @@ def toPVSMatrix(tensor):
     pvs_formatted_matrix = "(:"+','.join(pvs_matrix_entries)+":)"
     return pvs_formatted_matrix
 
-def genMatrixDeclarations(model):
+def toPVSSymMatrix(tensor, prefix):
+    pvs_matrix_entries = []
+    for r,row in enumerate(tensor):
+        np_weight = row.detach().numpy()
+        weight_num = len(np_weight)
+        weight_syms = []
+        for i in range(weight_num):
+            weight_syms.append(prefix+str(r)+str(i))
+            sym_vars.append(prefix+str(r)+str(i))
+        joined_str_weight = ','.join(weight_syms)
+        pvs_formatted = "(:"+joined_str_weight+":)"
+        pvs_matrix_entries.append(pvs_formatted)
+        
+    pvs_formatted_matrix = "(:"+','.join(pvs_matrix_entries)+":)"
+    print(pvs_formatted_matrix)
+    return pvs_formatted_matrix    
+
+def genMatrixDeclarations(model, sym=False):
     matrix_declarations = []
     for i,layer in enumerate(model):
         if isinstance(layer, nn.Linear):
@@ -80,10 +100,10 @@ def genMatrixDeclarations(model):
             b_rows = len(bias[0])
 
 
-            pvs_formatted_weight = toPVSMatrix(tr_weights)
+            pvs_formatted_weight = toPVSSymMatrix(tr_weights,"l"+str(i)+"_w")
             pvs_fullweight_entry = "linear"+str(i)+": MatrixMN("+str(w_rows)+","+str(w_cols)+") = "+pvs_formatted_weight
 
-            pvs_formatted_bias = toPVSMatrix(bias)
+            pvs_formatted_bias = toPVSSymMatrix(bias,"l"+str(i)+"_b")
             pvs_fullbias_entry = "linear_bias"+str(i)+": MatrixMN("+str(b_cols)+","+str(b_rows)+") = "+pvs_formatted_bias
 
 
@@ -169,6 +189,10 @@ constraints = genConstraintExpressions(input_vars)
 pvs_buffer = ""
 pvs_buffer+= "%"+str(model).replace("\n","\n%")+"\n"
 pvs_buffer+=args.name+const_header
+
+
+pvs_buffer+="\n\t" + ",".join(sym_vars)+": VAR real"
+
 pvs_buffer+="\n\t"
 for line in lines:
     pvs_buffer+=line+"\n\t"

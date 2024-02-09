@@ -5,7 +5,8 @@ import argparse
 
 # Constant blocks
 
-
+# Header for theory imports,
+# add new imports here
 const_header = ''': THEORY
     BEGIN 
         IMPORTING matrices@matrices
@@ -14,7 +15,9 @@ const_header = ''': THEORY
 
 const_trailer = "END "
 
-const_mat_relu = '''
+# Activation function placeholder
+const_mat_act = '''
+    % Replace actFun with a scalar function real -> real
     act(M: Matrix): MatrixMN(rows(M),columns(M)) =
         form_matrix(LAMBDA (i,j:nat): actFun(entry(M)(i,j)), rows(M), columns(M));
 '''
@@ -24,18 +27,22 @@ const_network = "net(input: Matrix): Matrix ="
 sym_vars = {}
 
 
-def getLeakyReluString(slope):
+# Generates the PVS function signature for a leaky relu with slope 'slope'
+def get_leaky_relu_string(slope):
     return f'lrelu(x: real): real = IF x > 0 THEN x ELSE {slope}*x ENDIF'
 
 
-def genAxiomsFromSymVars():
+# Generates the list of axioms used to replace symbolic weights
+# only when script called with '--sym' flag
+def gen_axioms_from_sym_vars():
     axioms = []
     for k in sym_vars.keys():
         axioms.append(k + "_ax: AXIOM " + k + "=" + str(sym_vars[k]))
     return axioms
 
 
-def toPVSMatrix(tensor):
+# Generates a PVS matrix signature from the pytorch tensor 'tensor'
+def to_pvs_matrix(tensor):
     pvs_matrix_entries = []
     for row in tensor:
         np_weight = row.detach().numpy()
@@ -47,7 +54,9 @@ def toPVSMatrix(tensor):
     return pvs_formatted_matrix
 
 
-def toPVSSymMatrix(tensor, prefix):
+# Generates a PVS matrix from the tensor 'tensor'
+# using only symbolic weights, with each symbol prefixed by 'prefix'
+def to_pvs_sym_matrix(tensor, prefix):
     pvs_matrix_entries = []
     for r, row in enumerate(tensor):
         np_weight = row.detach().numpy()
@@ -65,9 +74,11 @@ def toPVSSymMatrix(tensor, prefix):
     return pvs_formatted_matrix
 
 
-def genMatrixDeclarations(model, sym=False):
+# Generates all matrices PVS declaration from the model 'model'
+# If 'sym' is True then the matrices declaration contains symbolic weights
+def gen_matrix_declarations(model_, sym=False):
     matrix_declarations = []
-    for i, layer in enumerate(model):
+    for i, layer in enumerate(model_):
         if isinstance(layer, nn.Linear):
             weights = layer.weight
             bias = layer.bias
@@ -86,30 +97,32 @@ def genMatrixDeclarations(model, sym=False):
             b_rows = len(bias[0])
 
             if sym:
-                pvs_formatted_weight = toPVSSymMatrix(tr_weights, "l" + str(i) + "_w")
+                pvs_formatted_weight = to_pvs_sym_matrix(tr_weights, "l" + str(i) + "_w")
             else:
-                pvs_formatted_weight = toPVSMatrix(tr_weights)
+                pvs_formatted_weight = to_pvs_matrix(tr_weights)
 
-            pvs_fullweight_entry = "linear" + str(i) + ": MatrixMN(" + str(w_rows) + "," + str(
+            pvs_full_weight_entry = "linear" + str(i) + ": MatrixMN(" + str(w_rows) + "," + str(
                 w_cols) + ") = " + pvs_formatted_weight
 
             if sym:
-                pvs_formatted_bias = toPVSSymMatrix(bias, "l" + str(i) + "_b")
+                pvs_formatted_bias = to_pvs_sym_matrix(bias, "l" + str(i) + "_b")
             else:
-                pvs_formatted_bias = toPVSMatrix(bias)
+                pvs_formatted_bias = to_pvs_matrix(bias)
 
-            pvs_fullbias_entry = "linear_bias" + str(i) + ": MatrixMN(" + str(b_cols) + "," + str(
+            pvs_full_bias_entry = "linear_bias" + str(i) + ": MatrixMN(" + str(b_cols) + "," + str(
                 b_rows) + ") = " + pvs_formatted_bias
 
-            matrix_declarations.append(pvs_fullweight_entry)
-            matrix_declarations.append(pvs_fullbias_entry)
+            matrix_declarations.append(pvs_full_weight_entry)
+            matrix_declarations.append(pvs_full_bias_entry)
     return matrix_declarations
 
 
-def genNetworkOperationSequence(model):
+# Generates the succession of function calls to perform network inference
+# for the model 'model'
+def gen_network_operation_sequence(model_):
     network_operations = []
 
-    for i, layer in enumerate(model):
+    for i, layer in enumerate(model_):
         if isinstance(layer, nn.Linear):
             if i == 0:
                 network_operations.append("input")
@@ -131,28 +144,30 @@ def genNetworkOperationSequence(model):
     return network_operations
 
 
-def genTheorem(name, input_vars):
-    name += ": THEOREM\n"
-    name += "\t\tFORALL ("
+# Generates a placeholder theorem
+def gen_theorem(name_, input_vars_):
+    name_ += ": THEOREM\n"
+    name_ += "\t\tFORALL ("
 
-    xinvars = []
-    xnames = []
-    for i in range(input_vars):
-        xnames.append("x" + str(i) + "in")
-        xinvars.append("x" + str(i) + "in: x" + str(i) + "inreal")
+    x_input_vars = []
+    x_input_names = []
+    for i in range(input_vars_):
+        x_input_names.append("x" + str(i) + "in")
+        x_input_vars.append("x" + str(i) + "in: x" + str(i) + "inreal")
 
-    name += ','.join(xinvars) + "):\n"
-    name += "\t\t\tentry( net( (:(:" + ','.join(xnames) + ":):) ) )(0,0) <TBD>"
+    name_ += ','.join(x_input_vars) + "):\n"
+    name_ += "\t\t\tentry( net( (:(:" + ','.join(x_input_names) + ":):) ) )(0,0) <TBD>"
 
-    return name
+    return name_
 
 
-def genConstraintExpressions(input_vars):
-    constraints = ""
-    for i in range(input_vars):
-        constraints += "\tx" + str(i) + "inreal: TYPE = { r: real | r>=-<TBD> AND r<=<TBD> }\n"
+# Generates placeholder constraints on input variables 'input_vars'
+def gen_constraint_expressions(input_vars_l):
+    constraints_ = ""
+    for i in range(input_vars_l):
+        constraints_ += "\tx" + str(i) + "inreal: TYPE = { r: real | r>=-<TBD> AND r<=<TBD> }\n"
 
-    return constraints
+    return constraints_
 
 
 # Read input arguments
@@ -174,17 +189,17 @@ if __name__ == '__main__':
 
     input_vars = next(model.parameters()).size()[1]
 
-    lines = genMatrixDeclarations(model, args.sym)
-    sequence = genNetworkOperationSequence(model)
+    lines = gen_matrix_declarations(model, args.sym)
+    sequence = gen_network_operation_sequence(model)
 
-    theorem = genTheorem("network_bounds", input_vars)
+    theorem = gen_theorem("network_bounds", input_vars)
 
-    constraints = genConstraintExpressions(input_vars)
+    constraints = gen_constraint_expressions(input_vars)
 
     wb_axioms = []
 
     if args.sym is True:
-        wb_axioms = genAxiomsFromSymVars()
+        wb_axioms = gen_axioms_from_sym_vars()
 
     # Emit PVS
 
@@ -200,7 +215,7 @@ if __name__ == '__main__':
     for line in lines:
         pvs_buffer += line + "\n\t"
 
-    pvs_buffer += "\n" + const_mat_relu
+    pvs_buffer += "\n" + const_mat_act
 
     pvs_buffer += "\n" + constraints
 

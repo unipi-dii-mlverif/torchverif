@@ -185,7 +185,7 @@ if __name__ == '__main__':
     parser.add_argument("-s", "--sym", required=False, action='store_true')
     args = parser.parse_args()
 
-    model = torch.load(args.model_path)
+    model = torch.load(args.model_path, map_location=torch.device('cpu'))
 
     input_vars = next(model.parameters()).size()[1]
 

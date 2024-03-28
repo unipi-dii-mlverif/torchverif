@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import numpy
 import argparse
 
 # Constant blocks
@@ -12,6 +11,16 @@ const_header = ''': THEORY
 '''
 
 const_trailer = "END "
+
+relu_strategy = '''
+% | - network_bounds: PROOF
+% | - (skeep)
+% | - (expand "net0")
+% | - (expand "relu")
+% | - (repeat(lift - if))
+% | - (try (prop) ( assert ) (skip))
+% | - QED
+'''
 
 sym_vars = {}
 
@@ -42,14 +51,14 @@ def gen_network_operation_sequence(model_, var_names):
     network_operations = []
     last_output = []
     formatted_outputs = []
-    for i, layer in enumerate(model_):
+    for i_, layer in enumerate(model_):
         if isinstance(layer, nn.Linear):
-            if i == 0:
+            if i_ == 0:
                 network_operations.append("input")
                 last_output, f = gen_vector_matrix_product(var_names, layer.weight, layer.bias, "relu")
                 formatted_outputs.append(f)
             else:
-                network_operations.append("*linear" + str(i) + "+linear_bias" + str(i))
+                network_operations.append("*linear" + str(i_) + "+linear_bias" + str(i_))
                 last_output, f = gen_vector_matrix_product(last_output, layer.weight, layer.bias, "")
                 formatted_outputs.append(f)
 
@@ -63,19 +72,19 @@ def gen_theorem(name_, input_vars_):
 
     x_input_vars = []
     x_input_names = []
-    for i in range(input_vars_):
-        x_input_names.append("x" + str(i))
-        x_input_vars.append("x" + str(i) + ": x" + str(i) + "t")
+    for i_ in range(input_vars_):
+        x_input_names.append("x" + str(i_))
+        x_input_vars.append("x" + str(i_) + ": x" + str(i_) + "t")
 
     name_ += ','.join(x_input_vars) + "):\n"
-    name_ += "\t\t\t net( " + ','.join(x_input_names) + "  ) >= 1"
+    name_ += "\t\t\t net0( " + ','.join(x_input_names) + "  ) >= 1"
 
     return name_, x_input_vars, x_input_names
 
 
 def gen_theorem_eval(name_):
     name_ += ": THEOREM\n"
-    name_ += "\t\t net(0,0,0,0) = 0"
+    name_ += "\t\t net0(0,0,0,0) = 0"
 
     return name_
 
@@ -83,8 +92,8 @@ def gen_theorem_eval(name_):
 # Generates placeholder constraints on input variables 'input_vars'
 def gen_constraint_expressions(input_vars_l):
     constraints_ = ""
-    for i in range(input_vars_l):
-        constraints_ += "\tx" + str(i) + "t: TYPE = { r: real | r>=-1 AND r<=1 }\n"
+    for i_ in range(input_vars_l):
+        constraints_ += "\tx" + str(i_) + "t: TYPE = { r: real | r>=-1 AND r<=1 }\n"
 
     return constraints_
 
@@ -110,7 +119,7 @@ if __name__ == '__main__':
 
     theorem, x_vars, x_names = gen_theorem("network_bounds", input_vars)
 
-    evalth = gen_theorem_eval("eval_net")
+    # eval_theorem = gen_theorem_eval("eval_net")
 
     sequence, _, lo = gen_network_operation_sequence(model, x_names)
 
@@ -130,16 +139,18 @@ if __name__ == '__main__':
 
     pvs_buffer += "relu(x:real):real= IF x > 0 THEN x ELSE 0 ENDIF"
 
-    pvs_buffer += "\n\t" + "net(" + ','.join(x_vars) + "): real = "
-    pvs_buffer += "\t\t\n\t\t" + lo[0] + "\n\n"
+    for i, net in enumerate(lo):
+        pvs_buffer += "\n\t" + "net" + str(i) + "(" + ','.join(x_vars) + "): real = "
+        pvs_buffer += "\t\t\n\t\t" + net + "\n\n"
 
     pvs_buffer += "\t" + theorem
-    pvs_buffer += "\n" + evalth
+    # pvs_buffer += "\n" + eval_theorem
+
+    pvs_buffer += "\n" + relu_strategy
 
     pvs_buffer += "\n\n" + const_trailer + args.name
 
     pvs_buffer += "\n\t"
-
 
     if args.pvs_output is not None:
         outfile = open(args.pvs_output, "w")

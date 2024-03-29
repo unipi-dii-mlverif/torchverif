@@ -2,10 +2,22 @@ import torch
 import torch.nn as nn
 import argparse
 
+
+class cubic(torch.nn.Module):
+    def __init__(self):
+        super(cubic, self).__init__()
+        return
+
+    def forward(self, x):
+        return x ** 3
+
+
 # Constant blocks
 
 # Header for theory imports,
 # add new imports here
+
+
 const_header = ''': THEORY
     BEGIN 
 '''
@@ -13,13 +25,13 @@ const_header = ''': THEORY
 const_trailer = "END "
 
 relu_strategy = '''
-% | - network_bounds: PROOF
-% | - (skeep)
-% | - (expand "net0")
-% | - (expand "relu")
-% | - (repeat(lift - if))
-% | - (try (prop) ( assert ) (skip))
-% | - QED
+%|- network_bounds: PROOF
+%|- (skeep)
+%|- (expand "net0")
+%|- (expand "relu")
+%|- (repeat (lift-if))
+%|- (try (prop) ( assert ) (skip))
+%|- QED
 '''
 
 sym_vars = {}

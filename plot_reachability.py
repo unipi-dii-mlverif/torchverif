@@ -97,7 +97,7 @@ class IntervalTensor(object):
         self._value = from_np(intervals)
 
     def __repr__(self):
-        return "IntervalTensor(value={})".format(self._value)
+        return "interval_tensor(value={})".format(self._value)
 
     def data(self):
         return self._value
@@ -167,15 +167,7 @@ def relu_interval(c):
     return [[lb, ub]]
 
 
-def extract_output_tensor(interval_tensor):
-    idata = interval_tensor.data()
-    out_data = [0] * len(idata)
-    for l_, i_ in enumerate(idata):
-        feat_ = np.array(i_[0]).reshape(2, 1)
-        label_ = (np.ones(2) * l_).reshape(2, 1)
-        stacked = np.hstack((label_, feat_))
-        out_data[l_] = stacked
-    return out_data
+
 
 intervals = np.array([[-1,1],[-1,1]], dtype=object)
 i = IntervalTensor(intervals)

@@ -1,7 +1,7 @@
 import functools
-import numpy as np
 import torch
 from interval import interval, imath
+
 
 def implements(torch_function):
     """Register a torch function override for ScalarTensor"""
@@ -78,13 +78,13 @@ def Sigmoid(input, inplace=False):
         ints[i] = sigmoid_interval(v)
     return input
 
+
 def sigmoid_interval(intr):
     return 1 / (1 + imath.exp(-intr))
+
 
 @interval.function
 def relu_interval(c):
     lb = c.inf if c.inf > 0 else 0
     ub = c.sup if c.sup > 0 else 0
     return [[lb, ub]]
-
-

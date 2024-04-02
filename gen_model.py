@@ -19,6 +19,7 @@ model = nn.Sequential(
     nn.Linear(4, 10, bias=True),
     nn.ReLU(),
     nn.Linear(10, 2, bias=True),
+    nn.Sigmoid()
 )
 
 torch.save(model, "test_model.pth")

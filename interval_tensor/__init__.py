@@ -79,8 +79,20 @@ def Sigmoid(input, inplace=False):
     return input
 
 
+@implements(torch.tanh)
+def Tanh(input, inplace=False):
+    ints = input._value
+    for i, v in enumerate(ints):
+        ints[i] = tanh_interval(v)
+    return input
+
+
 def sigmoid_interval(intr):
     return 1 / (1 + imath.exp(-intr))
+
+
+def tanh_interval(intr):
+    return imath.tanh(intr)
 
 
 @interval.function

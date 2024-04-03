@@ -41,9 +41,8 @@ if __name__ == '__main__':
     # test_seq()
     r = [0.5, 0.8]
     sample = []
-    for i in range(3*4*4):
+    for i in range(3*32*32):
         sample.append(r)
-    np_sample = np.array(sample).reshape(3,4,4,2)
+    np_sample = np.array(sample).reshape(3,32,32,2)
     it = IntervalTensor(np_sample)
-
     disp_bound_images(it)

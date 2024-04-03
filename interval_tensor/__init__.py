@@ -1,7 +1,7 @@
 import functools
 import torch
 from interval import interval, imath
-
+import numpy as np
 
 def implements(torch_function):
     """Register a torch function override for ScalarTensor"""
@@ -100,3 +100,13 @@ def relu_interval(c):
     lb = c.inf if c.inf > 0 else 0
     ub = c.sup if c.sup > 0 else 0
     return [[lb, ub]]
+
+def extract_feature_tensor_bounds(feature_tensor):
+    idata = feature_tensor.data()
+    out_data = [np.array([])] * len(idata)
+    for l_, i_ in enumerate(idata):
+        feat_ = np.array(i_[0]).reshape(2, 1)
+        label_ = (np.ones(2) * l_).reshape(2, 1)
+        stacked = np.hstack((label_, feat_))
+        out_data[l_] = stacked
+    return out_data

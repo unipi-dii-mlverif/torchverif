@@ -3,6 +3,7 @@ from interval_tensor import extract_feature_tensor_bounds
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 
 
 def _get_output_shape(net):
@@ -45,22 +46,30 @@ def evaluate_fcnn_samples(net, regions, cartesian=True, samples=10):
     return poly
 
 
-def interval_plot_scores_helper(sample_group, bounds, threshold):
-    for sample in sample_group:
-        plt.scatter(sample[:, 1], sample[:, 0], s=0.1, marker=".")
+def interval_plot_scores_helper(sample_group, bounds, threshold=None):
+    colors = cm.rainbow(np.linspace(0, 1, len(bounds)))
+    for i, sample in enumerate(sample_group):
+        l = plt.scatter(sample[:, 1], sample[:, 0], s=0.1, marker=".", color=colors[i])
+        l.set_label("Class " + str(i) + " samples")
     bbs = []
     for b in bounds:
         if len(bbs) < b[0] + 1:
             bbs.append([])
         bbs[int(b[0])].append(b[1])
 
-    # for i, b in enumerate(bbs):
-    #    plt.hlines(y=i, xmin=b[0], xmax=b[1], color="blue", linestyles="-.")
-    plt.scatter(bounds[:, 1], bounds[:, 0], color="blue", marker="*");
-    plt.axvline(threshold, color="green", linestyle="--")
-    plt.ylabel("Label")
-    plt.xlabel("Score")
+    for i, b in enumerate(bbs):
+        l = plt.scatter(y=[i,i], x=[bounds[2*i,1],bounds[2*i+1,1]], color=colors[i], marker="*")
+        if len(sample_group) < 1:
+            l = plt.hlines(y=i, xmin=b[0], xmax=b[1], color=colors[i], linestyles="--")
+        l.set_label("Class " + str(i) + " bounds")
+
+    #plt.scatter(bounds[:, 1], bounds[:, 0], c=colors, marker="*")
+    if threshold is not None:
+        plt.axvline(threshold, color="green", linestyle="--")
+    plt.ylabel("Output neuron")
+    plt.xlabel("Prediction")
     plt.yticks(bounds[:, 0])
+    plt.legend()
     plt.show()
 
 

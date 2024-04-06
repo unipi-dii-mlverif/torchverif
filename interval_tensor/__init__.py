@@ -51,7 +51,10 @@ class IntervalTensor(object):
         new_arr = np.empty(dim[:-1], dtype=object)
         area = new_arr.size
         new_arr = new_arr.reshape(area)
-        np_array_ = np_array.reshape(area,2)
+        if area == np_array.size:
+            np_array_ = np_array.reshape(area,1)
+        else:
+            np_array_ = np_array.reshape(area,2)
         for i, pair in enumerate(np_array_):
             if pair is None:
                 new_arr[i] = interval(0)

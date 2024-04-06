@@ -29,13 +29,19 @@ def evaluate_fcnn_samples(net, regions, cartesian=True, samples=10):
     out_classes = _get_output_shape(net)
     features = []
     for r in regions:
-        f = torch.distributions.uniform.Uniform(r[0], r[1]).sample([samples])
+        if len(r) > 1:
+            f = torch.distributions.uniform.Uniform(r[0], r[1]).sample([samples])
+        else:
+            f = r
         features.append(f)
     stacked = None
-    if cartesian:
-        stacked = torch.cartesian_prod(*features)
+    if len(features[0]) > 1:
+        if cartesian:
+            stacked = torch.cartesian_prod(*features)
+        else:
+            stacked = torch.stack(features, 1)
     else:
-        stacked = torch.stack(features, 1)
+        stacked = torch.Tensor(features).reshape(1,len(features))
     sample_no = len(stacked)
     points = net(stacked).detach().numpy()
     poly = []
@@ -50,7 +56,7 @@ def interval_plot_scores_helper(sample_group, bounds, threshold=None):
     colors = cm.rainbow(np.linspace(0, 1, len(bounds)))
     for i, sample in enumerate(sample_group):
         l = plt.scatter(sample[:, 1], sample[:, 0], s=0.1, marker=".", color=colors[i])
-        l.set_label("Class " + str(i) + " samples")
+        l.set_label("Output " + str(i) + " samples")
     bbs = []
     for b in bounds:
         if len(bbs) < b[0] + 1:
@@ -61,7 +67,7 @@ def interval_plot_scores_helper(sample_group, bounds, threshold=None):
         l = plt.scatter(y=[i,i], x=[bounds[2*i,1],bounds[2*i+1,1]], color=colors[i], marker="*")
         if len(sample_group) < 1:
             l = plt.hlines(y=i, xmin=b[0], xmax=b[1], color=colors[i], linestyles="--")
-        l.set_label("Class " + str(i) + " bounds")
+        l.set_label("Output " + str(i) + " bounds")
 
     #plt.scatter(bounds[:, 1], bounds[:, 0], c=colors, marker="*")
     if threshold is not None:

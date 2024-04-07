@@ -41,7 +41,7 @@ def evaluate_fcnn_samples(net, regions, cartesian=True, samples=10):
         else:
             stacked = torch.stack(features, 1)
     else:
-        stacked = torch.Tensor(features).reshape(1,len(features))
+        stacked = torch.Tensor(features).reshape(1, len(features))
     sample_no = len(stacked)
     points = net(stacked).detach().numpy()
     poly = []
@@ -52,11 +52,12 @@ def evaluate_fcnn_samples(net, regions, cartesian=True, samples=10):
     return poly
 
 
-def interval_plot_scores_helper(sample_group, bounds, threshold=None):
+def interval_plot_scores_helper(sample_group, bounds, threshold=None, legend=None):
     colors = cm.rainbow(np.linspace(0, 1, len(bounds)))
     for i, sample in enumerate(sample_group):
         l = plt.scatter(sample[:, 1], sample[:, 0], s=0.1, marker=".", color=colors[i])
-        l.set_label("Output " + str(i) + " samples")
+        if legend is not None and legend > 1:
+            l.set_label("Output " + str(i) + " samples")
     bbs = []
     for b in bounds:
         if len(bbs) < b[0] + 1:
@@ -64,17 +65,48 @@ def interval_plot_scores_helper(sample_group, bounds, threshold=None):
         bbs[int(b[0])].append(b[1])
 
     for i, b in enumerate(bbs):
-        l = plt.scatter(y=[i,i], x=[bounds[2*i,1],bounds[2*i+1,1]], color=colors[i], marker="*")
+        l = plt.scatter(y=[i, i], x=[bounds[2 * i, 1], bounds[2 * i + 1, 1]], color=colors[i], marker="*")
         if len(sample_group) < 1:
             l = plt.hlines(y=i, xmin=b[0], xmax=b[1], color=colors[i], linestyles="--")
-        l.set_label("Output " + str(i) + " bounds")
+        if legend is not None and legend >= 1:
+            l.set_label("Output " + str(i) + " bounds")
 
-    #plt.scatter(bounds[:, 1], bounds[:, 0], c=colors, marker="*")
     if threshold is not None:
         plt.axvline(threshold, color="green", linestyle="--")
     plt.ylabel("Output neuron")
     plt.xlabel("Prediction")
     plt.yticks(bounds[:, 0])
+    if legend is not None and legend > 0:
+        plt.legend()
+    plt.show()
+
+
+def interval_time_plot_helper(bound_list, neuron=None):
+    colors = cm.rainbow(np.linspace(0, 1, len(bound_list[0])))
+    class_number = int(len(bound_list[0]) / 2)
+    time_series = np.empty([len(bound_list[0]), len(bound_list)])  # as the number of output labels*2 (up and inf)
+    timestamps = np.linspace(0, len(bound_list), len(bound_list))
+    for time, bounds in enumerate(bound_list):
+        bbs = []
+        for b in bounds:
+            if len(bbs) < b[0] + 1:
+                bbs.append([])
+            bbs[int(b[0])].append(b[1])
+
+        for i, b in enumerate(bbs):
+            time_series[2 * i, time] = bounds[2 * i, 1]
+            time_series[2 * i + 1, time] = bounds[2 * i + 1, 1]
+
+    for i in range(class_number):
+        color_idx = i
+        ts_low = time_series[2*i]
+        ts_up = time_series[2*i + 1]
+        l = plt.scatter(timestamps, ts_low, marker=".", s=5 ,color=colors[color_idx])
+        l = plt.scatter(timestamps, ts_up, marker=".", s=5 ,color=colors[color_idx])
+        plt.fill_between(timestamps, ts_low, ts_up, color=colors[color_idx], alpha=0.5)
+        l.set_label("Neuron " + str(color_idx))
+
+
     plt.legend()
     plt.show()
 

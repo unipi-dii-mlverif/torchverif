@@ -46,15 +46,15 @@ class IntervalTensor(object):
             inf_list.append(e[0].sup)
         return np.array(inf_list).reshape(self._value.shape)
 
-    def from_np(np_array):
+    def from_np(np_array: np.ndarray):
         dim = list(np_array.shape)
         new_arr = np.empty(dim[:-1], dtype=object)
         area = new_arr.size
         new_arr = new_arr.reshape(area)
         if area == np_array.size:
-            np_array_ = np_array.reshape(area,1)
+            np_array_ = np_array.reshape(area, 1)
         else:
-            np_array_ = np_array.reshape(area,2)
+            np_array_ = np_array.reshape(area, 2)
         for i, pair in enumerate(np_array_):
             if pair is None:
                 new_arr[i] = interval(0)

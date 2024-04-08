@@ -99,13 +99,15 @@ def interval_time_plot_helper(bound_list, neuron=None):
 
     for i in range(class_number):
         color_idx = i
-        ts_low = time_series[2*i]
-        ts_up = time_series[2*i + 1]
-        l = plt.scatter(timestamps, ts_low, marker=".", s=5 ,color=colors[color_idx])
-        l = plt.scatter(timestamps, ts_up, marker=".", s=5 ,color=colors[color_idx])
-        plt.fill_between(timestamps, ts_low, ts_up, color=colors[color_idx], alpha=0.5)
-        l.set_label("Neuron " + str(color_idx))
 
+        if (neuron is not None and color_idx == neuron) or neuron is None:
+            ts_low = time_series[2*i]
+            ts_up = time_series[2*i + 1]
+            l = plt.scatter(timestamps, ts_low, marker=".", s=1 ,color=colors[color_idx])
+            l = plt.scatter(timestamps, ts_up, marker=".", s=1 ,color=colors[color_idx])
+            plt.fill_between(timestamps, ts_low, ts_up, color=colors[color_idx], alpha=0.5)
+            l.set_label("Neuron " + str(color_idx))
+    plt.hlines(y=0, xmin=0, xmax=len(timestamps), linestyles="dashed")
 
     plt.legend()
     plt.show()

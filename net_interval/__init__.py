@@ -81,11 +81,12 @@ def interval_plot_scores_helper(sample_group, bounds, threshold=None, legend=Non
     plt.show()
 
 
-def interval_time_plot_helper(bound_list, neuron=None):
+def interval_time_plot_helper(bound_list, neuron=None, class_labels=None, xticks=[]):
     colors = cm.rainbow(np.linspace(0, 1, len(bound_list[0])))
     class_number = int(len(bound_list[0]) / 2)
     time_series = np.empty([len(bound_list[0]), len(bound_list)])  # as the number of output labels*2 (up and inf)
     timestamps = np.linspace(0, len(bound_list), len(bound_list))
+    fig, ax = plt.subplots(1,1)
     for time, bounds in enumerate(bound_list):
         bbs = []
         for b in bounds:
@@ -106,9 +107,15 @@ def interval_time_plot_helper(bound_list, neuron=None):
             l = plt.scatter(timestamps, ts_low, marker=".", s=1 ,color=colors[color_idx])
             l = plt.scatter(timestamps, ts_up, marker=".", s=1 ,color=colors[color_idx])
             plt.fill_between(timestamps, ts_low, ts_up, color=colors[color_idx], alpha=0.5)
-            l.set_label("Neuron " + str(color_idx))
+            if class_labels is not None:
+                l.set_label(class_labels[i])
+            else:
+                l.set_label("Neuron " + str(color_idx))
     plt.hlines(y=0, xmin=0, xmax=len(timestamps), linestyles="dashed")
 
+    if xticks is not None:
+        ax.set_xticks(np.arange(0,len(xticks)))
+        ax.set_xticklabels(xticks, rotation="vertical")
     plt.legend()
     plt.show()
 

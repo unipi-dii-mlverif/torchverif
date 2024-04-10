@@ -35,9 +35,10 @@ def multiple_seq():
     f6 = [0.4, 0.7]  # STD VALUE EGO-SPEED
 
     bound_list = []
-
-    for i in range(100):
-        f1 = [i, i+10]
+    ticks = []
+    for i in range(11):
+        f3 = [i, i+10]
+        ticks.append("["+str(f3[0])+","+str(f3[1])+"]")
         arr_f = [f5, f6, f1, f2, f3, f4]
 
         net = torch.load("./models/attack_nn_4layers_6feat.pth", map_location=torch.device('cpu'))
@@ -46,7 +47,7 @@ def multiple_seq():
         intervals, bounds = evaluate_fcnn_interval(net, arr_f)
         bound_list.append(bounds)
 
-    interval_time_plot_helper(bound_list,neuron=None)
+    interval_time_plot_helper(bound_list,neuron=None, class_labels=["no attack", "attack"], xticks=ticks)
     #interval_plot_scores_helper([], bounds, threshold=0)
     #print(verify_bound_disjunction(intervals, 1))
 

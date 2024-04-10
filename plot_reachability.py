@@ -36,10 +36,10 @@ def multiple_seq():
 
     bound_list = []
     ticks = []
-    for i in range(11):
-        f3 = [i, i+10]
-        ticks.append("["+str(f3[0])+","+str(f3[1])+"]")
-        arr_f = [f5, f6, f1, f2, f3, f4]
+    for i in range(1,30,2):
+        f = [i, i+5]
+        ticks.append("["+str(f[0])+","+str(f[1])+"]")
+        arr_f = [f, f6, f1, f2, f3, f4]
 
         net = torch.load("./models/attack_nn_4layers_6feat.pth", map_location=torch.device('cpu'))
         net = torch.nn.Sequential(*(list(net.children())[:-1]))
@@ -47,9 +47,13 @@ def multiple_seq():
         intervals, bounds = evaluate_fcnn_interval(net, arr_f)
         bound_list.append(bounds)
 
-    interval_time_plot_helper(bound_list,neuron=None, class_labels=["no attack", "attack"], xticks=ticks)
-    #interval_plot_scores_helper([], bounds, threshold=0)
-    #print(verify_bound_disjunction(intervals, 1))
+    interval_time_plot_helper(bound_list,neuron=None,
+                              class_labels=["no attack", "attack"],
+                              xticks=ticks,
+                              xlabel="Ego-car mean absolute speed uncertainty",
+                              ylabel="Prediction score")
+    plt.savefig("./plots/meanabsspeed_uncertainty.png")
+    plt.show()
 
 def test_ron_seq():
     # Input regions

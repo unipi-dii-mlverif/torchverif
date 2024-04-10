@@ -52,7 +52,7 @@ def evaluate_fcnn_samples(net, regions, cartesian=True, samples=10):
     return poly
 
 
-def interval_plot_scores_helper(sample_group, bounds, threshold=None, legend=None):
+def interval_plot_scores_helper(sample_group, bounds, threshold=None, legend=None, xlabel=None, ylabel=None, title=None):
     colors = cm.rainbow(np.linspace(0, 1, len(bounds)))
     for i, sample in enumerate(sample_group):
         l = plt.scatter(sample[:, 1], sample[:, 0], s=0.1, marker=".", color=colors[i])
@@ -78,10 +78,13 @@ def interval_plot_scores_helper(sample_group, bounds, threshold=None, legend=Non
     plt.yticks(bounds[:, 0])
     if legend is not None and legend > 0:
         plt.legend()
+    plt.title(title if title is not None else "")
+    plt.ylabel(ylabel if ylabel is not None else "")
+    plt.xlabel(xlabel if xlabel is not None else "")
     plt.show()
 
 
-def interval_time_plot_helper(bound_list, neuron=None, class_labels=None, xticks=[]):
+def interval_time_plot_helper(bound_list, neuron=None, class_labels=None, xticks=[], xlabel=None, ylabel=None, title=None):
     colors = cm.rainbow(np.linspace(0, 1, len(bound_list[0])))
     class_number = int(len(bound_list[0]) / 2)
     time_series = np.empty([len(bound_list[0]), len(bound_list)])  # as the number of output labels*2 (up and inf)
@@ -115,9 +118,12 @@ def interval_time_plot_helper(bound_list, neuron=None, class_labels=None, xticks
 
     if xticks is not None:
         ax.set_xticks(np.arange(0,len(xticks)))
-        ax.set_xticklabels(xticks, rotation="vertical")
+        ax.set_xticklabels(xticks, rotation=45)
     plt.legend()
-    plt.show()
+    plt.title(title if title is not None else "")
+    plt.ylabel(ylabel if ylabel is not None else "")
+    plt.xlabel(xlabel if xlabel is not None else "")
+    plt.subplots_adjust(bottom=0.2)
 
 
 def verify_bound_disjunction(t_interval, check_class):

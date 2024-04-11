@@ -1,7 +1,12 @@
+from matplotlib import patches
+from webencodings import labels
+
 from interval_tensor import IntervalTensor
 from interval_tensor import extract_feature_tensor_bounds
 import numpy as np
 import torch
+import matplotlib.patches as mpatches
+import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
@@ -52,12 +57,12 @@ def evaluate_fcnn_samples(net, regions, cartesian=True, samples=10):
     return poly
 
 
-def interval_plot_scores_helper(sample_group, bounds, threshold=None, legend=None, xlabel=None, ylabel=None, title=None):
-    colors = cm.rainbow(np.linspace(0, 1, len(bounds)))
+def interval_plot_scores_helper(sample_group, bounds, threshold=None, legend=None, class_labels=None, xticks=[], xlabel=None, ylabel=None, title=None):
+    colors = ["darkorange", "royalblue", "lime"]
     for i, sample in enumerate(sample_group):
         l = plt.scatter(sample[:, 1], sample[:, 0], s=0.1, marker=".", color=colors[i])
         if legend is not None and legend > 1:
-            l.set_label("Output " + str(i) + " samples")
+            l.set_label(class_labels[i])
     bbs = []
     for b in bounds:
         if len(bbs) < b[0] + 1:
@@ -69,7 +74,7 @@ def interval_plot_scores_helper(sample_group, bounds, threshold=None, legend=Non
         if len(sample_group) < 1:
             l = plt.hlines(y=i, xmin=b[0], xmax=b[1], color=colors[i], linestyles="--")
         if legend is not None and legend >= 1:
-            l.set_label("Output " + str(i) + " bounds")
+            l.set_label(class_labels[i])
 
     if threshold is not None:
         plt.axvline(threshold, color="green", linestyle="--")
@@ -81,11 +86,12 @@ def interval_plot_scores_helper(sample_group, bounds, threshold=None, legend=Non
     plt.title(title if title is not None else "")
     plt.ylabel(ylabel if ylabel is not None else "")
     plt.xlabel(xlabel if xlabel is not None else "")
-    plt.show()
 
 
 def interval_time_plot_helper(bound_list, neuron=None, class_labels=None, xticks=[], xlabel=None, ylabel=None, title=None):
-    colors = cm.rainbow(np.linspace(0, 1, len(bound_list[0])))
+    colors = ["darkorange", "royalblue", "lime"]
+    print(colors)
+    hatches = ["O", "//", "xx", "\\\\", "//"]
     class_number = int(len(bound_list[0]) / 2)
     time_series = np.empty([len(bound_list[0]), len(bound_list)])  # as the number of output labels*2 (up and inf)
     timestamps = np.linspace(0, len(bound_list), len(bound_list))
@@ -100,7 +106,7 @@ def interval_time_plot_helper(bound_list, neuron=None, class_labels=None, xticks
         for i, b in enumerate(bbs):
             time_series[2 * i, time] = bounds[2 * i, 1]
             time_series[2 * i + 1, time] = bounds[2 * i + 1, 1]
-
+    legend_handles = []
     for i in range(class_number):
         color_idx = i
 
@@ -109,17 +115,19 @@ def interval_time_plot_helper(bound_list, neuron=None, class_labels=None, xticks
             ts_up = time_series[2*i + 1]
             l = plt.scatter(timestamps, ts_low, marker=".", s=1 ,color=colors[color_idx])
             l = plt.scatter(timestamps, ts_up, marker=".", s=1 ,color=colors[color_idx])
-            plt.fill_between(timestamps, ts_low, ts_up, color=colors[color_idx], alpha=0.5)
-            if class_labels is not None:
-                l.set_label(class_labels[i])
-            else:
-                l.set_label("Neuron " + str(color_idx))
+            plt.fill_between(timestamps, ts_low, ts_up, facecolor="none", edgecolor=colors[i], hatch=hatches[color_idx])
+            handle = patches.Patch(fill=None,edgecolor=colors[i], hatch=hatches[i])
+            legend_handles.append(handle)
+            #if class_labels is not None:
+            #    l.set_label(class_labels[i])
+            #else:
+            #    l.set_label("Neuron " + str(color_idx))
     plt.hlines(y=0, xmin=0, xmax=len(timestamps), linestyles="dashed")
 
     if xticks is not None:
         ax.set_xticks(np.arange(0,len(xticks)))
         ax.set_xticklabels(xticks, rotation=45)
-    plt.legend()
+    plt.legend(legend_handles, class_labels)
     plt.title(title if title is not None else "")
     plt.ylabel(ylabel if ylabel is not None else "")
     plt.xlabel(xlabel if xlabel is not None else "")

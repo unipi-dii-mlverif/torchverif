@@ -32,6 +32,14 @@ class IntervalTensor(object):
     def shape(self):
         return self._value.shape
 
+    def sample(self, num_samples):
+        as_list = self._value.flatten()
+        samples = []
+        for i in as_list:
+            sam = torch.distributions.uniform.Uniform(i[0].inf, i[0].sup).sample([num_samples])
+            samples.append(sam)
+        return torch.stack(samples, 1)
+
     def inf(self):
         as_list = self._value.flatten()
         inf_list = []

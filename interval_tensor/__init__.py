@@ -29,6 +29,12 @@ class IntervalTensor(object):
     def data(self):
         return self._value
 
+    def from_raw(np_intervals):
+        i = IntervalTensor(np_intervals)
+        i._value = np_intervals
+        return i
+
+
     def shape(self):
         return self._value.shape
 
@@ -38,7 +44,8 @@ class IntervalTensor(object):
         for i in as_list:
             sam = torch.distributions.uniform.Uniform(i[0].inf, i[0].sup).sample([num_samples])
             samples.append(sam)
-        return torch.stack(samples, 1)
+        stacked = torch.stack(samples, 1)
+        return stacked.reshape((num_samples, *self.shape()))
 
     def inf(self):
         as_list = self._value.flatten()
@@ -94,17 +101,60 @@ def Linear(input, weight, bias=None):
         r_accum = interval(0)
         for i, c in enumerate(r):
             r_accum += c.item() * input._value[i]
-        r_accum += bias[h].item()
+        if bias is not None and bias:
+            r_accum += bias[h].item()
         result[h] = r_accum
     rint._value = result
     return rint
 
 
 @implements(torch.nn.functional.conv2d)
-def Conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
-    print(input)
-    print(weight)
-    return input
+def Conv2d(image, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
+    ishape = image.shape()
+    #print("Image size: ", image.shape())
+    wshape = weight.shape
+    #print("Parameter size: ", weight.shape)
+    pshape = padding
+    dshape = dilation
+
+    hout = int((ishape[1] + 2 * pshape[0] - dshape[0] * (wshape[2] - 1) - 1) / stride[0]) + 1
+    wout = int((ishape[2] + 2 * pshape[1] - dshape[1] * (wshape[3] - 1) - 1) / stride[1]) + 1
+    cout = wshape[0]
+    cin = wshape[1]
+    fh = wshape[2]
+    fw = wshape[3]
+    #print("Output size: ", (cout, hout, wout))
+
+    output = np.empty((cout, hout, wout), dtype=object)
+    # Iterate over output channels
+    for cout_j in range(cout):
+        # Iterate over input channels
+        conv_accum = IntervalTensor(np.zeros((hout, wout, 1)))
+        _ca = conv_accum.data()
+        #print(_ca.shape)
+        for k in range(cin):
+            #print("Out channel: ", cout_j, " In channel: ", k)
+
+            # Collect elements for convolution
+            # kernel (cout_j, k, :, :) and
+            # image (k, :, :)
+            kernel = weight[cout_j, k, :, :]
+            img = image.data()[k, :, :]
+
+            # Perform convolution
+            # between kernel and img
+
+            for i in range(hout):
+                for j in range(wout):
+                    accum = interval(0)
+                    for f in range(fh):
+                        for g in range(fw):
+                            accum += kernel[f, g] * img[i + f, j + g]
+
+                    _ca[i, j] += accum + bias[cout_j]
+        output[cout_j] = _ca
+    #print(output)
+    return IntervalTensor.from_raw(output)
 
 
 @implements(torch.nn.functional.relu)

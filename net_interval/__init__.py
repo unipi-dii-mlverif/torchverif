@@ -90,9 +90,9 @@ def interval_plot_scores_helper(sample_group, bounds, threshold=None, legend=Non
 
 def interval_time_plot_helper(bound_list, neuron=None, class_labels=None, xticks=[], xlabel=None, ylabel=None, title=None):
     colors = ["darkorange", "royalblue", "lime"]
-    print(colors)
     hatches = ["O", "//", "xx", "\\\\", "//"]
     class_number = int(len(bound_list[0]) / 2)
+    print(class_number)
     time_series = np.empty([len(bound_list[0]), len(bound_list)])  # as the number of output labels*2 (up and inf)
     timestamps = np.linspace(0, len(bound_list), len(bound_list))
     fig, ax = plt.subplots(1,1)
@@ -109,7 +109,7 @@ def interval_time_plot_helper(bound_list, neuron=None, class_labels=None, xticks
     legend_handles = []
     for i in range(class_number):
         color_idx = i
-
+        print(color_idx)
         if (neuron is not None and color_idx == neuron) or neuron is None:
             ts_low = time_series[2*i]
             ts_up = time_series[2*i + 1]

@@ -30,10 +30,9 @@ class IntervalTensor(object):
         return self._value
 
     def from_raw(np_intervals):
-        i = IntervalTensor(np_intervals)
+        i = IntervalTensor([])
         i._value = np_intervals
         return i
-
 
     def shape(self):
         return self._value.shape
@@ -111,9 +110,9 @@ def Linear(input, weight, bias=None):
 @implements(torch.nn.functional.conv2d)
 def Conv2d(image, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
     ishape = image.shape()
-    #print("Image size: ", image.shape())
+    # print("Image size: ", image.shape())
     wshape = weight.shape
-    #print("Parameter size: ", weight.shape)
+    # print("Parameter size: ", weight.shape)
     pshape = padding
     dshape = dilation
 
@@ -123,7 +122,7 @@ def Conv2d(image, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
     cin = wshape[1]
     fh = wshape[2]
     fw = wshape[3]
-    #print("Output size: ", (cout, hout, wout))
+    # print("Output size: ", (cout, hout, wout))
 
     output = np.empty((cout, hout, wout), dtype=object)
     # Iterate over output channels
@@ -131,9 +130,9 @@ def Conv2d(image, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
         # Iterate over input channels
         conv_accum = IntervalTensor(np.zeros((hout, wout, 1)))
         _ca = conv_accum.data()
-        #print(_ca.shape)
+        # print(_ca.shape)
         for k in range(cin):
-            #print("Out channel: ", cout_j, " In channel: ", k)
+            # print("Out channel: ", cout_j, " In channel: ", k)
 
             # Collect elements for convolution
             # kernel (cout_j, k, :, :) and
@@ -153,7 +152,7 @@ def Conv2d(image, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
 
                     _ca[i, j] += accum + bias[cout_j]
         output[cout_j] = _ca
-    #print(output)
+    # print(output)
     return IntervalTensor.from_raw(output)
 
 
@@ -179,6 +178,59 @@ def Tanh(input, inplace=False):
     for i, v in enumerate(ints):
         ints[i] = tanh_interval(v)
     return input
+
+
+@implements(torch.var)
+def Var(input, dim=None, keepdim=False, correction=1):
+    # Simplified version for channel-wise variance on 3D tensors with batch_size=1
+    batch_size = input.shape()[0]
+    assert batch_size == 1, "Not implemented for batch_size > 1 "
+    cout = input.shape()[1]
+    hin = input.shape()[2]
+    win = input.shape()[3]
+    n = (hin * win) - correction
+    # iterate over channels to compute variance
+    output = np.empty((cout), dtype=object)
+    for cout_j in range(cout):
+        # Collect channel tensor to compute variance
+        img = input.data()[0, cout_j, :, :]
+        # First compute mean
+        img_mean = interval(0)
+        for h in range(hin):
+            for w in range(win):
+                img_mean = img_mean + img[h, w]
+        img_mean /= win * hin
+
+        # Then compute variance
+        r_accum = interval(0)
+        for h in range(hin):
+            for w in range(win):
+                r_accum = r_accum + (img[h, w] - img_mean) ** 2
+        output[cout_j] = r_accum / n
+    return IntervalTensor.from_raw(output)
+
+@implements(torch.mean)
+def Mean(input):
+    # Simplified version for channel-wise variance on 3D tensors with batch_size=1
+    batch_size = input.shape()[0]
+    assert batch_size == 1, "Not implemented for batch_size > 1 "
+    cout = input.shape()[1]
+    hin = input.shape()[2]
+    win = input.shape()[3]
+    n = (hin * win)
+    # iterate over channels to compute variance
+    output = np.empty((cout), dtype=object)
+    for cout_j in range(cout):
+        # Collect channel tensor to compute variance
+        img = input.data()[0, cout_j, :, :]
+        # First compute mean
+        img_mean = interval(0)
+        for h in range(hin):
+            for w in range(win):
+                img_mean = img_mean + img[h, w]
+
+        output[cout_j] = img_mean / n
+    return IntervalTensor.from_raw(output)
 
 
 def sigmoid_interval(intr):

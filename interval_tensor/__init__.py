@@ -110,21 +110,21 @@ def Linear(input, weight, bias=None):
 @implements(torch.nn.functional.conv2d)
 def Conv2d(image, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
     ishape = image.shape()
-    # print("Image size: ", image.shape())
+    print("Image size: ", image.shape())
     wshape = weight.shape
     # print("Parameter size: ", weight.shape)
     pshape = padding
     dshape = dilation
 
-    hout = int((ishape[1] + 2 * pshape[0] - dshape[0] * (wshape[2] - 1) - 1) / stride[0]) + 1
-    wout = int((ishape[2] + 2 * pshape[1] - dshape[1] * (wshape[3] - 1) - 1) / stride[1]) + 1
+    hout = int((ishape[2] + 2 * pshape[0] - dshape[0] * (wshape[2] - 1) - 1) / stride[0]) + 1
+    wout = int((ishape[3] + 2 * pshape[1] - dshape[1] * (wshape[3] - 1) - 1) / stride[1]) + 1
     cout = wshape[0]
     cin = wshape[1]
     fh = wshape[2]
     fw = wshape[3]
     # print("Output size: ", (cout, hout, wout))
 
-    output = np.empty((cout, hout, wout), dtype=object)
+    output = np.empty((1, cout, hout, wout), dtype=object)
     # Iterate over output channels
     for cout_j in range(cout):
         # Iterate over input channels
@@ -138,7 +138,7 @@ def Conv2d(image, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
             # kernel (cout_j, k, :, :) and
             # image (k, :, :)
             kernel = weight[cout_j, k, :, :]
-            img = image.data()[k, :, :]
+            img = image.data()[0, k, :, :]
 
             # Perform convolution
             # between kernel and img
@@ -150,8 +150,63 @@ def Conv2d(image, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
                         for g in range(fw):
                             accum += kernel[f, g] * img[i + f, j + g]
 
-                    _ca[i, j] += accum + bias[cout_j]
-        output[cout_j] = _ca
+                    _ca[i, j] += accum
+
+        # Apply bias
+        if bias is not None:
+            b = bias[cout_j]
+            for i in range(hout):
+                for j in range(wout):
+                    _ca[i, j] += b
+
+        output[0, cout_j] = _ca
+    # print(output)
+    return IntervalTensor.from_raw(output)
+
+
+@implements(torch.nn.functional.max_pool2d)
+def MaxPool2D(image, kernel_size, stride=1, padding=(0, 0), dilation=1, groups=1, ceil_mode=False,
+              return_indices=False):
+    ishape = image.shape()
+
+    wshape = kernel_size
+    # print("Parameter size: ", weight.shape)
+    pshape = padding
+    dshape = dilation
+
+    hout = int((ishape[2] + 2 * pshape - dshape * (wshape - 1) - 1) / stride) + 1
+    wout = int((ishape[3] + 2 * pshape - dshape * (wshape - 1) - 1) / stride) + 1
+    cout = ishape[1]
+    fh = wshape
+    fw = wshape
+    # print("Output size: ", (cout, hout, wout))
+
+    output = np.empty((1, cout, hout, wout), dtype=object)
+    # Iterate over output channels
+    for cout_j in range(cout):
+        # Iterate over input channels
+        max_pool = IntervalTensor(np.zeros((hout, wout, 1)))
+        _ca = max_pool.data()
+        # print(_ca.shape)
+        # print("Out channel: ", cout_j, " In channel: ", k)
+
+        # Collect elements for convolution
+        # kernel (cout_j, k, :, :) and
+        # image (k, :, :)
+        img = image.data()[0, cout_j, :, :]
+
+        # Perform convolution
+        # between kernel and img
+
+        for i in range(hout):
+            for j in range(wout):
+                accum = interval(img[0, 0])
+                for f in range(fh):
+                    for g in range(fw):
+                        accum = max(accum, img[i + f, j + g])
+
+                _ca[i, j] += accum
+        output[0,cout_j] = _ca
     # print(output)
     return IntervalTensor.from_raw(output)
 
@@ -208,6 +263,7 @@ def Var(input, dim=None, keepdim=False, correction=1):
                 r_accum = r_accum + (img[h, w] - img_mean) ** 2
         output[cout_j] = r_accum / n
     return IntervalTensor.from_raw(output)
+
 
 @implements(torch.mean)
 def Mean(input):

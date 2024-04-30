@@ -37,6 +37,9 @@ class IntervalTensor(object):
     def shape(self):
         return self._value.shape
 
+    def dim(self):
+        return len(self._value.shape)
+
     def sample(self, num_samples):
         as_list = self._value.flatten()
         samples = []
@@ -206,10 +209,44 @@ def MaxPool2D(image, kernel_size, stride=1, padding=(0, 0), dilation=1, groups=1
                         accum = max(accum, img[i + f, j + g])
 
                 _ca[i, j] += accum
-        output[0,cout_j] = _ca
+        output[0, cout_j] = _ca
     # print(output)
     return IntervalTensor.from_raw(output)
 
+
+@implements(torch.nn.functional.batch_norm)
+def BatchNorm2D(input, running_mean, running_var, weight=None, bias=None, training=False, momentum=0.1, eps=1e-05):
+    ishape = input.shape()
+    h = ishape[2]
+    w = ishape[3]
+    cout = ishape[1]
+
+    # Compute channel-wise mean and variance
+    ch_var = torch.var(input)
+    ch_mean = torch.mean(input)
+
+    output = np.empty((1, cout, h, w), dtype=object)
+    for cout_j in range(cout):
+        # Iterate over output channels
+        batch_norm = IntervalTensor(np.zeros((h, w, 1)))
+        _ca = batch_norm.data()
+
+        # Collect elements for normalization
+        # image (k, :, :)
+        # mean  (k, :, :)
+        # var   (k, :, :)
+        img = input.data()[0, cout_j, :, :]
+        mean = ch_mean.data()[cout_j]
+        var = ch_var.data()[cout_j]
+
+        for i in range(h):
+            for j in range(w):
+                a = img[i,j]
+                a = (a - mean) / imath.sqrt(var + eps)
+                _ca[i,j] = a
+
+        output[0, cout_j] = _ca
+    return IntervalTensor.from_raw(output)
 
 @implements(torch.nn.functional.relu)
 def ReLU(input, inplace=False):

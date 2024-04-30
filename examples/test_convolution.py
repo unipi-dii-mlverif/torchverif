@@ -5,7 +5,7 @@ import torch.nn as nn
 import matplotlib.pyplot as plt
 
 
-def test_batchn():
+def test_maxpool():
     tensor_i = torch.randn((1, 3, 5, 5))
     net = torch.nn.Sequential(
         torch.nn.MaxPool2d(5, 1, padding=0)
@@ -16,6 +16,18 @@ def test_batchn():
     max_i = net(tensor_i)
     max_int = net(tensor_int)
     print(max_i, max_int)
+
+def test_batchn():
+    tensor_i = torch.randn((1, 3, 2, 2))
+    net = torch.nn.Sequential(
+        torch.nn.BatchNorm2d(3)
+    )
+
+    tensor_int = IntervalTensor(torch.unsqueeze(tensor_i, -1).numpy())
+    batch_i = net(tensor_i)
+    batch_int = net(tensor_int)
+    print(batch_i)
+    print(batch_int)
 
 
 def test_var():

@@ -22,7 +22,7 @@ def test_batchn():
     tensor_i = torch.randn((1, 3, 2, 2))
     net = torch.nn.Sequential(
         torch.nn.BatchNorm2d(3, track_running_stats=False),
-        torch.nn.Flatten()
+        torch.nn.Flatten() # Flatten
     )
 
     print(net[0].running_mean)

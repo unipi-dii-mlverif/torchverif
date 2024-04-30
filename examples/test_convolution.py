@@ -17,17 +17,22 @@ def test_maxpool():
     max_int = net(tensor_int)
     print(max_i, max_int)
 
+
 def test_batchn():
     tensor_i = torch.randn((1, 3, 2, 2))
     net = torch.nn.Sequential(
-        torch.nn.BatchNorm2d(3)
+        torch.nn.BatchNorm2d(3, track_running_stats=False),
+        torch.nn.Flatten()
     )
+
+    print(net[0].running_mean)
+    print(net[0].running_var)
 
     tensor_int = IntervalTensor(torch.unsqueeze(tensor_i, -1).numpy())
     batch_i = net(tensor_i)
     batch_int = net(tensor_int)
-    print(batch_i)
-    print(batch_int)
+
+    print(batch_i, "\n", batch_int)
 
 
 def test_var():

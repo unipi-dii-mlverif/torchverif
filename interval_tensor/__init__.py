@@ -40,6 +40,9 @@ class IntervalTensor(object):
     def dim(self):
         return len(self._value.shape)
 
+    def flatten(self, start, end):
+        return IntervalTensor.from_raw(np.ndarray.flatten(self._value))
+
     def sample(self, num_samples):
         as_list = self._value.flatten()
         samples = []
@@ -215,14 +218,18 @@ def MaxPool2D(image, kernel_size, stride=1, padding=(0, 0), dilation=1, groups=1
 
 
 @implements(torch.nn.functional.batch_norm)
-def BatchNorm2D(input, running_mean, running_var, weight=None, bias=None, training=False, momentum=0.1, eps=1e-05):
+def BatchNorm2D(input, running_mean, running_var, weight=None, bias=None, training=False, momentum=0.1, eps=1e-05, track_running_stats=True):
     ishape = input.shape()
     h = ishape[2]
     w = ishape[3]
     cout = ishape[1]
 
+    print(running_mean)
+    print(running_var)
+    print(weight,"\n", bias)
+
     # Compute channel-wise mean and variance
-    ch_var = torch.var(input)
+    ch_var = torch.var(input, correction=0)
     ch_mean = torch.mean(input)
 
     output = np.empty((1, cout, h, w), dtype=object)
@@ -236,14 +243,20 @@ def BatchNorm2D(input, running_mean, running_var, weight=None, bias=None, traini
         # mean  (k, :, :)
         # var   (k, :, :)
         img = input.data()[0, cout_j, :, :]
-        mean = ch_mean.data()[cout_j]
+        mean = (ch_mean.data()[cout_j])
         var = ch_var.data()[cout_j]
 
+        if track_running_stats and running_mean is not None and running_var is not None:
+            mean = mean*(1-momentum) + momentum*running_mean[cout_j]
+            var = var*(1-momentum) + momentum*running_var[cout_j]
+
+        bi = bias[cout_j]
+        we = weight[cout_j]
         for i in range(h):
             for j in range(w):
                 a = img[i,j]
                 a = (a - mean) / imath.sqrt(var + eps)
-                _ca[i,j] = a
+                _ca[i,j] = a*we+bi
 
         output[0, cout_j] = _ca
     return IntervalTensor.from_raw(output)

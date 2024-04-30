@@ -106,7 +106,8 @@ def Linear(input, weight, bias=None):
         r_accum = interval(0)
         for i, c in enumerate(r):
             r_accum += c.item() * input._value[i]
-        if bias is not None and bias:
+        if bias is not None:
+            print("bias...")
             r_accum += bias[h].item()
         result[h] = r_accum
     rint._value = result
@@ -115,8 +116,8 @@ def Linear(input, weight, bias=None):
 
 @implements(torch.nn.functional.conv2d)
 def Conv2d(image, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
+    print("[CONV2D]")
     ishape = image.shape()
-    print("Image size: ", image.shape())
     wshape = weight.shape
     # print("Parameter size: ", weight.shape)
     pshape = padding
@@ -157,7 +158,6 @@ def Conv2d(image, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
                             accum += kernel[f, g] * img[i + f, j + g]
 
                     _ca[i, j] += accum
-
         # Apply bias
         if bias is not None:
             b = bias[cout_j]
@@ -167,12 +167,16 @@ def Conv2d(image, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
 
         output[0, cout_j] = _ca
     # print(output)
+    print(output)
+    print("===========")
     return IntervalTensor.from_raw(output)
 
 
 @implements(torch.nn.functional.max_pool2d)
 def MaxPool2D(image, kernel_size, stride=1, padding=(0, 0), dilation=1, groups=1, ceil_mode=False,
               return_indices=False):
+    print("[MAXPOOL2D]")
+
     ishape = image.shape()
 
     wshape = kernel_size
@@ -206,27 +210,28 @@ def MaxPool2D(image, kernel_size, stride=1, padding=(0, 0), dilation=1, groups=1
 
         for i in range(hout):
             for j in range(wout):
-                accum = interval(img[0, 0])
+                accum = interval(img[i, j])
                 for f in range(fh):
                     for g in range(fw):
                         accum = max(accum, img[i + f, j + g])
 
-                _ca[i, j] += accum
+                _ca[i, j] = accum
         output[0, cout_j] = _ca
     # print(output)
+    print(output)
+    print("===========")
     return IntervalTensor.from_raw(output)
 
 
 @implements(torch.nn.functional.batch_norm)
-def BatchNorm2D(input, running_mean, running_var, weight=None, bias=None, training=False, momentum=0.1, eps=1e-05, track_running_stats=True):
+def BatchNorm2D(input, running_mean, running_var, weight=None, bias=None, training=False, momentum=0.1, eps=1e-05,
+                track_running_stats=True):
+    print("[BATCHNORM2D]")
+
     ishape = input.shape()
     h = ishape[2]
     w = ishape[3]
     cout = ishape[1]
-
-    print(running_mean)
-    print(running_var)
-    print(weight,"\n", bias)
 
     # Compute channel-wise mean and variance
     ch_var = torch.var(input, correction=0)
@@ -244,22 +249,30 @@ def BatchNorm2D(input, running_mean, running_var, weight=None, bias=None, traini
         # var   (k, :, :)
         img = input.data()[0, cout_j, :, :]
         mean = (ch_mean.data()[cout_j])
+        print("=======================")
+        print(mean)
         var = ch_var.data()[cout_j]
+        print("=======================")
+        print(var)
+        print("=======================")
 
         if track_running_stats and running_mean is not None and running_var is not None:
-            mean = mean*(1-momentum) + momentum*running_mean[cout_j]
-            var = var*(1-momentum) + momentum*running_var[cout_j]
+            mean = mean * (momentum) + (1 - momentum) * running_mean[cout_j]
+            var = var * (momentum) + (1 - momentum) * running_var[cout_j]
 
         bi = bias[cout_j]
         we = weight[cout_j]
         for i in range(h):
             for j in range(w):
-                a = img[i,j]
+                a = img[i, j]
                 a = (a - mean) / imath.sqrt(var + eps)
-                _ca[i,j] = a*we+bi
+                _ca[i, j] = a * we + bi
 
         output[0, cout_j] = _ca
+    print(output)
+    print("===========")
     return IntervalTensor.from_raw(output)
+
 
 @implements(torch.nn.functional.relu)
 def ReLU(input, inplace=False):

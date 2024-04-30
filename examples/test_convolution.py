@@ -48,29 +48,17 @@ def test_var():
 
 def testconvnet():
     torch.manual_seed(9999)
-    net = torch.nn.Sequential(
-        torch.nn.Conv2d(3, 5, kernel_size=2, stride=1, bias=True)
-    )
+    net = torch.load("../models/conv_model_5ch.pth", map_location=torch.device('cpu'))
+    net
+    inimg = torch.randn(1, 3, 32, 32)
+    tensor_int = IntervalTensor(torch.unsqueeze(inimg, -1).numpy())
 
-    inimg = torch.ones(1, 3, 3, 3)
-
-    intimg = np.empty((1, 3, 3, 3, 2), dtype=object)
-
-    for i in range(3):
-        for j in range(3):
-            intimg[0, 0, i, j] = [1, 1]
-            intimg[0, 1, i, j] = [1, 1]
-            intimg[0, 2, i, j] = [1, 1]
-
-    intimg = IntervalTensor(intimg)
-    print(inimg)
-
+    intout = net(tensor_int)
     output = net(inimg)
-    intout = net(intimg)
 
-    print(output[0][0])
-    print(intout.data()[0][0])
+    print(output)
+    print(intout)
 
 
 if __name__ == '__main__':
-    test_batchn()
+    testconvnet()

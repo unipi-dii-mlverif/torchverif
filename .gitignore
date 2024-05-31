@@ -162,3 +162,8 @@ cython_debug/
 *.pvs
 *.pth
 .idea/
+carlanet/
+*.sarif
+plots/
+models/
+outputs/

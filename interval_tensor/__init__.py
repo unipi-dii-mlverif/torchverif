@@ -128,7 +128,6 @@ def Conv2d(image, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
     fh = wshape[2]
     fw = wshape[3]
 
-
     output = np.empty((1, cout, hout, wout), dtype=object)
     # Iterate over output channels
     for cout_j in range(cout):
@@ -137,7 +136,6 @@ def Conv2d(image, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
         _ca = conv_accum.data()
 
         for k in range(cin):
-
 
             # Collect elements for convolution
             # kernel (cout_j, k, :, :) and
@@ -171,7 +169,6 @@ def Conv2d(image, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
 @implements(torch.nn.functional.max_pool2d)
 def MaxPool2D(image, kernel_size, stride=1, padding=(0, 0), dilation=1, groups=1, ceil_mode=False,
               return_indices=False):
-
     ishape = image.shape()
 
     wshape = kernel_size
@@ -209,14 +206,12 @@ def MaxPool2D(image, kernel_size, stride=1, padding=(0, 0), dilation=1, groups=1
                 _ca[i, j] = accum
         output[0, cout_j] = _ca
 
-
     return IntervalTensor.from_raw(output)
 
 
 @implements(torch.nn.functional.batch_norm)
 def BatchNorm2D(input, running_mean, running_var, weight=None, bias=None, training=False, momentum=0.1, eps=1e-05,
                 track_running_stats=True):
-
     ishape = input.shape()
     h = ishape[2]
     w = ishape[3]
@@ -241,7 +236,6 @@ def BatchNorm2D(input, running_mean, running_var, weight=None, bias=None, traini
 
         var = ch_var.data()[cout_j]
 
-
         if track_running_stats and running_mean is not None and running_var is not None:
             mean = mean * (momentum) + (1 - momentum) * running_mean[cout_j]
             var = var * (momentum) + (1 - momentum) * running_var[cout_j]
@@ -255,7 +249,6 @@ def BatchNorm2D(input, running_mean, running_var, weight=None, bias=None, traini
                 _ca[i, j] = a * we + bi
 
         output[0, cout_j] = _ca
-
 
     return IntervalTensor.from_raw(output)
 
@@ -362,3 +355,20 @@ def extract_feature_tensor_bounds(feature_tensor):
         stacked = np.hstack((label_, feat_))
         out_data[l_] = stacked
     return out_data
+
+
+def from_np_supinf(sup_arr, inf_arr):
+    dst = torch.stack([inf_arr, sup_arr], dim=-1)
+    tensor_int = IntervalTensor(dst.numpy())
+    return tensor_int
+
+
+def sample_from_supinf(inf_arr, sup_arr, samples):
+    dist = torch.distributions.uniform.Uniform(inf_arr, sup_arr)
+    return dist.sample([samples])
+
+
+def get_bounds_from_samples(samples):
+    nps = np.array(samples)
+
+

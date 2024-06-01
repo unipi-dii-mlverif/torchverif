@@ -18,14 +18,14 @@ HANDLED_FUNCTIONS = {}
 
 
 class IntervalTensor(object):
-    def __init__(self, inf, sup):
+    def __init__(self, inf, sup, gen = False):
         assert inf.shape == sup.shape
+        assert torch.all(inf <= sup)
         self._inf = inf
         self._sup = sup
-        self._gen = interval_from_infsup(inf, sup)
-
-    def ordered(self):
-        return IntervalTensor(torch.minimum(self._inf, self._sup), torch.maximum(self._inf, self._sup))
+        self._gen = None
+        if gen is True:
+            self._gen = interval_from_infsup(inf, sup)
 
     def __repr__(self):
         return "interval_inf(value={}),\n interval_sup(value={}),".format(self._inf, self._sup)
@@ -40,15 +40,46 @@ class IntervalTensor(object):
         return len(self._inf.shape)
 
     def __add__(self, other):
+        if type(other) != IntervalTensor:
+            return IntervalTensor(self._inf + other, self._sup + other)
+
         return IntervalTensor(self._inf + other._inf, self._sup + other._sup)
+
+    def __sub__(self, other):
+        if type(other) != IntervalTensor:
+            return IntervalTensor(self._inf - other, self._sup - other)
+
+        return IntervalTensor(self._inf - other._sup, self._sup - other._inf)
+
+    def __mul__(self, other):
+        if type(other) != IntervalTensor:
+            m_inf = self._inf * other
+            m_sup = self._sup * other
+            return IntervalTensor(torch.minimum(m_inf, m_sup), torch.maximum(m_inf, m_sup))
+
+        m0 = self._inf * other._inf
+        m1 = self._inf * other._sup
+        m2 = self._sup * other._inf
+        m3 = self._sup * other._sup
+
+        return IntervalTensor(
+            torch.minimum(torch.minimum(m0, m1), torch.minimum(m2, m3)),
+            torch.maximum(torch.maximum(m0, m1), torch.maximum(m2, m3))
+        )
+
+    def __div__(self, other):
+        if type(other) != IntervalTensor:
+            m_inf = self._inf / other
+            m_sup = self._sup / other
+            return IntervalTensor(torch.minimum(m_inf, m_sup), torch.maximum(m_inf, m_sup))
+
+        rec = IntervalTensor(torch.reciprocal(other._sup), torch.reciprocal(other._inf))
+        return self*rec
 
     def flatten(self):
         finf = torch.flatten(self._inf)
         fsup = torch.flatten(self._sup)
         return IntervalTensor(finf, fsup)
-
-    def sample(self, samples):
-        return interval_from_infsup(self._inf, self._sup, samples)
 
     @classmethod
     def __torch_function__(cls, func, types, args=(), kwargs=None):
@@ -129,18 +160,6 @@ def Tanh(input, inplace=False):
     rsup = torch.nn.functional.tanh(input._sup)
     return IntervalTensor(rinf, rsup)
 
-
-def extract_feature_tensor_bounds(feature_tensor):
-    idata = feature_tensor.data()
-    out_data = [np.array([])] * len(idata)
-    for l_, i_ in enumerate(idata):
-        feat_ = np.array(i_[0]).reshape(2, 1)
-        label_ = (np.ones(2) * l_).reshape(2, 1)
-        stacked = np.hstack((label_, feat_))
-        out_data[l_] = stacked
-    return out_data
-
-
 def from_np_supinf(sup_arr, inf_arr):
     dst = torch.stack([inf_arr, sup_arr], dim=-1)
     tensor_int = IntervalTensor(dst.detach().numpy())
@@ -151,3 +170,10 @@ def interval_from_infsup(inf_arr, sup_arr, samples=1000):
     torch.manual_seed(9999)
     dist = torch.distributions.uniform.Uniform(inf_arr, sup_arr)
     return dist.sample([samples])
+
+
+if __name__ == '__main__':
+    _inf = torch.randn([4,3,224,224])
+    _sup = _inf+1
+    t1 = IntervalTensor(_inf, _sup)
+    print(t1*2)

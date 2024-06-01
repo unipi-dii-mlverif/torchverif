@@ -26,6 +26,9 @@ class IntervalTensor(object):
     def __repr__(self):
         return "interval_tensor(value={})".format(self._value)
 
+    def __len__(self):
+        return len(self._value)
+
     def data(self):
         return self._value
 
@@ -136,7 +139,7 @@ def Conv2d(image, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
         _ca = conv_accum.data()
 
         for k in range(cin):
-
+            print(f'[DEBUG] INTERVAL CONV {cout_j},{k}')
             # Collect elements for convolution
             # kernel (cout_j, k, :, :) and
             # image (k, :, :)
@@ -363,12 +366,7 @@ def from_np_supinf(sup_arr, inf_arr):
     return tensor_int
 
 
-def sample_from_supinf(inf_arr, sup_arr, samples):
+def interval_from_supinf(inf_arr, sup_arr, samples=100):
     dist = torch.distributions.uniform.Uniform(inf_arr, sup_arr)
     return dist.sample([samples])
-
-
-def get_bounds_from_samples(samples):
-    nps = np.array(samples)
-
 

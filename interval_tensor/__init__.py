@@ -366,7 +366,7 @@ def from_np_supinf(sup_arr, inf_arr):
     return tensor_int
 
 
-def interval_from_supinf(inf_arr, sup_arr, samples=100):
+def interval_from_supinf(sup_arr, inf_arr, samples=100):
     dist = torch.distributions.uniform.Uniform(inf_arr, sup_arr)
     return dist.sample([samples])
 

@@ -22,6 +22,7 @@ class IntervalTensor(object):
         assert inf.shape == sup.shape
         self._inf = inf
         self._sup = sup
+        self._gen = interval_from_infsup(inf, sup)
 
     def ordered(self):
         return IntervalTensor(torch.minimum(self._inf, self._sup), torch.maximum(self._inf, self._sup))
@@ -146,6 +147,7 @@ def from_np_supinf(sup_arr, inf_arr):
     return tensor_int
 
 
-def interval_from_infsup(inf_arr, sup_arr, samples=100):
+def interval_from_infsup(inf_arr, sup_arr, samples=1000):
+    torch.manual_seed(9999)
     dist = torch.distributions.uniform.Uniform(inf_arr, sup_arr)
     return dist.sample([samples])

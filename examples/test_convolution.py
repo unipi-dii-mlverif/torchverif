@@ -1,6 +1,6 @@
 import torch
 
-from interval_tensor import *
+from interval_tensor.v2 import *
 import torch.nn as nn
 import matplotlib.pyplot as plt
 
@@ -51,7 +51,7 @@ def testconvnet():
     net = torch.load("../models/conv_model_5ch.pth", map_location=torch.device('cpu'))
     net
     inimg = torch.randn(1, 3, 32, 32)
-    tensor_int = IntervalTensor(torch.unsqueeze(inimg, -1).numpy())
+    tensor_int = IntervalTensor(inimg, inimg)
 
     intout = net(tensor_int)
     output = net(inimg)

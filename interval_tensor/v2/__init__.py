@@ -1,6 +1,9 @@
 import functools
+import math
+
 import torch
 import numpy as np
+import torch.nn.functional
 
 
 def implements(torch_function):
@@ -30,6 +33,12 @@ class IntervalTensor(object):
 
     def __len__(self):
         return len(self._inf)
+
+    def size(self, dim=None):
+        return self._inf.size(self, dim)
+
+    def _size(self):
+        return np.prod(self._inf.shape)
 
     def dim(self):
         return len(self.shape)
@@ -88,7 +97,7 @@ class IntervalTensor(object):
             torch.maximum(torch.maximum(m0, m1), torch.maximum(m2, m3))
         )
 
-    def __div__(self, other):
+    def __truediv__(self, other):
         if type(other) != IntervalTensor:
             m_inf = self._inf / other
             m_sup = self._sup / other
@@ -138,17 +147,20 @@ def Conv2d(image, weight, bias=None, stride=(1, 1), padding=(0, 0), dilation=(1,
     cin = wshape[1]
     fh = wshape[2]
     fw = wshape[3]
+
+    hs = stride[0]
+    ws = stride[1]
+
     output = IntervalTensor(torch.empty((batches, cout, hout, wout)), torch.empty((batches, cout, hout, wout)))
     for batch in range(batches):
         for cout_j in range(cout):
             conv_accum = IntervalTensor(torch.empty((hout, wout)), torch.empty((hout, wout)))
-            print(conv_accum.shape)
 
             kernels = weight[cout_j, :, :, :]
             img = image[batch, :, :, :]
             for i in range(hout):
                 for j in range(wout):
-                    conv_accum[i, j] = torch.sum(img[:, i:i + fh, j:j + fw] * kernels)
+                    conv_accum[i, j] = torch.sum(img[:, hs*i:hs*i + fh, ws*j:ws*j + fw] * kernels)
 
             if bias is not None:
                 b = bias[cout_j]
@@ -173,16 +185,36 @@ def MaxPool2D(image, kernel_size, stride=1, padding=(0, 0), dilation=1, groups=1
             pool = IntervalTensor(torch.empty((hout, wout)), torch.empty((hout, wout)))
             for i in range(hout):
                 for j in range(wout):
-                    pool[i,j] = torch.max(img[i:i + kernel_size, j:j + kernel_size])
+                    pool[i, j] = torch.max(img[i:i + kernel_size, j:j + kernel_size])
             output[batch, cout_j] = pool
     return output
 
+
 @implements(torch.nn.functional.batch_norm)
-def BatchNorm2D(input, running_mean, running_var, weight=None, bias=None, training=False, momentum=0.1, eps=1e-05,
+def BatchNorm2D(input, running_mean=None, running_var=None, weight=None, bias=None, training=False, momentum=0.1, eps=1e-05,
                 track_running_stats=True):
-    binf = torch.nn.functional.batch_norm(input._inf, running_mean, running_var, weight, bias, training, momentum, eps)
-    bsup = torch.nn.functional.batch_norm(input._sup, running_mean, running_var, weight, bias, training, momentum, eps)
-    return IntervalTensor(binf, bsup)
+    ishape = input.shape
+    h = ishape[2]
+    w = ishape[3]
+    cout = ishape[1]
+    batches = input.shape[0]
+    output = IntervalTensor(torch.empty((batches, cout, h, w)), torch.empty((batches, cout, h, w)))
+    for cout_j in range(cout):
+
+        img = input[:, cout_j, :, :]
+        mean = torch.mean(img)
+        var = torch.var(img)
+        print(var)
+        if track_running_stats and running_mean is not None and running_var is not None:
+            mean = mean * (momentum) + (1 - momentum) * running_mean[cout_j]
+            var = var * (momentum) + (1 - momentum) * running_var[cout_j]
+
+        bi = bias[cout_j]
+        we = weight[cout_j]
+        norm_img = (img - mean) / torch.sqrt(var + eps)
+        output[:, cout_j] = norm_img * we + bi
+
+    return output
 
 
 @implements(torch.cat)
@@ -215,7 +247,8 @@ def Sum(input, dim=None, keepdim=False, dtype=None):
 
 @implements(torch.squeeze)
 def Squeeze(input, dim):
-    return IntervalTensor(torch.squeeze(input._inf,dim), torch.squeeze(input._sup,dim))
+    return IntervalTensor(torch.squeeze(input._inf, dim), torch.squeeze(input._sup, dim))
+
 
 @implements(torch.max)
 def Max(input, dim=None, keepdim=False, dtype=None):
@@ -231,6 +264,7 @@ def Max(input, dim=None, keepdim=False, dtype=None):
         return torch.squeeze(res, dim=dim)
     return res
 
+
 @implements(torch.min)
 def Min(input, dim=None, keepdim=False, dtype=None):
     if dim is None:
@@ -245,9 +279,18 @@ def Min(input, dim=None, keepdim=False, dtype=None):
         return torch.squeeze(res, dim=dim)
     return res
 
+
 @implements(torch.mean)
 def Mean(input):
     return IntervalTensor(torch.mean(input._inf), torch.mean(input._sup))
+
+
+@implements(torch.var)
+def Var(input, correction=1):
+    im = torch.square(input - torch.mean(input))
+    var = torch.sum(im) * (1 / (im._size() - correction))
+    print(var)
+    return var
 
 
 @implements(torch.nn.functional.relu)
@@ -270,6 +313,18 @@ def Tanh(input, inplace=False):
     rsup = torch.nn.functional.tanh(input._sup)
     return IntervalTensor(rinf, rsup)
 
+@implements(torch.sqrt)
+def Sqrt(input, inplace=False):
+    rinf = torch.sqrt(input._inf)
+    rsup = torch.sqrt(input._sup)
+    return IntervalTensor(rinf, rsup)
+
+@implements(torch.square)
+def Square(input, inplace=False):
+    rinf = torch.square(input._inf)
+    rsup = torch.square(input._sup)
+    return IntervalTensor(rinf, rsup)
+
 
 def from_np_supinf(sup_arr, inf_arr):
     dst = torch.stack([inf_arr, sup_arr], dim=-1)
@@ -285,6 +340,12 @@ def interval_from_infsup(inf_arr, sup_arr, samples=50):
 
 if __name__ == '__main__':
     _inf = torch.randn([2, 3, 32, 32])
-    _sup = _inf + 1
+    _sup = _inf
     t1 = IntervalTensor(_inf, _inf)
+    fil = torch.randn([3,3,3,3])
+    m = torch.Tensor([0,0,0])
+    v = torch.Tensor([1,1,1])
+    a = torch.nn.functional.conv2d(_inf, fil, stride=[2,2], padding=[0,0])
+    b = torch.nn.functional.conv2d(t1, fil, stride=[2,2], padding=[0,0])
+
 

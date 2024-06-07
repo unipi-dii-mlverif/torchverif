@@ -127,8 +127,11 @@ class IntervalTensor(object):
 def Linear(input, weight, bias=None):
     wshape = weight.shape
     output = IntervalTensor(torch.zeros(wshape[0]), torch.ones(wshape[0]))
+    print(weight.shape, input.shape)
     for i, w in enumerate(weight):
         output[i] = torch.sum(input * w)
+    if bias is not None:
+        output = output + bias
     return output
 
 
@@ -152,15 +155,17 @@ def Conv2d(image, weight, bias=None, stride=(1, 1), padding=(0, 0), dilation=(1,
     ws = stride[1]
 
     output = IntervalTensor(torch.empty((batches, cout, hout, wout)), torch.empty((batches, cout, hout, wout)))
+    print(output.shape)
     for batch in range(batches):
         for cout_j in range(cout):
+            print("Conv2d", cout_j, cout, end="\r\n")
             conv_accum = IntervalTensor(torch.empty((hout, wout)), torch.empty((hout, wout)))
 
             kernels = weight[cout_j, :, :, :]
             img = image[batch, :, :, :]
             for i in range(hout):
                 for j in range(wout):
-                    conv_accum[i, j] = torch.sum(img[:, hs*i:hs*i + fh, ws*j:ws*j + fw] * kernels)
+                    conv_accum[i, j] = torch.sum(img[:, hs:hs + fh, ws:ws + fw] * kernels)
 
             if bias is not None:
                 b = bias[cout_j]
@@ -204,7 +209,6 @@ def BatchNorm2D(input, running_mean=None, running_var=None, weight=None, bias=No
         img = input[:, cout_j, :, :]
         mean = torch.mean(img)
         var = torch.var(img)
-        print(var)
         if track_running_stats and running_mean is not None and running_var is not None:
             mean = mean * (momentum) + (1 - momentum) * running_mean[cout_j]
             var = var * (momentum) + (1 - momentum) * running_var[cout_j]
@@ -289,7 +293,6 @@ def Mean(input):
 def Var(input, correction=1):
     im = torch.square(input - torch.mean(input))
     var = torch.sum(im) * (1 / (im._size() - correction))
-    print(var)
     return var
 
 

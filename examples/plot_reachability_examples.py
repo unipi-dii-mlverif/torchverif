@@ -1,5 +1,6 @@
 import torch
 
+import interval_tensor.v2
 from net_interval import *
 import torch.nn as nn
 import matplotlib.pyplot as plt
@@ -16,7 +17,7 @@ def test_seq():
 
     arr_f = [f5, f6, f1, f2, f3, f4]
 
-    net = torch.load("./models/attack_nn_4layers_6feat.pth", map_location=torch.device('cpu'))
+    net = torch.load("../models/attack_nn_4layers_6feat.pth", map_location=torch.device('cpu'))
     net = torch.nn.Sequential(*(list(net.children())[:-1]))
 
     intervals, bounds = evaluate_fcnn_interval(net, arr_f)
@@ -85,20 +86,39 @@ def test_ron_seq():
 def test_mpc_seq():
     # Input regions
     f1 = [24, 25]
-    f2 = [0, 37.4]
+    f2 = [0, 35]
     f3 = [-2, 2]
 
     arr_f = [f1, f2, f3]
 
-    net = torch.load("./models/cruise_model_hyp.pth", map_location=torch.device('cpu'))
+    net = torch.load("../models/model.pth", map_location=torch.device('cpu'))
 
     intervals, bounds = evaluate_fcnn_interval(net, arr_f)
-    o_sam = evaluate_fcnn_samples(net, arr_f, cartesian=False, samples=10000)
-    interval_plot_scores_helper(o_sam, bounds, threshold=0,
+    print(bounds)
+    #o_sam = evaluate_fcnn_samples(net, arr_f, cartesian=False, samples=10000)
+    interval_plot_scores_helper([], bounds, threshold=0,
                                 class_labels=["Acceleration bounds"],
                                 xlabel="Acceleration (m/s$^2$)",
                                 ylabel="Output neuron", legend=1)
     print(bounds)
+    plt.show()
+
+def test_mpc_seq_v2():
+    # Input regions
+    f1 = [24, 25]
+    f2 = [0, 35]
+    f3 = [-2, 2]
+    net = torch.load("../models/model.pth", map_location=torch.device('cpu'))
+
+    arr_f = torch.Tensor([f1, f2, f3])
+    interval = interval_tensor.v2.IntervalTensor(arr_f[:,0], arr_f[:,1])
+    o = net(interval)
+    bounds = bounds_from_v2_predictions(o)
+
+    interval_plot_scores_helper([], np.array(bounds), threshold=0,
+                                class_labels=["Acceleration bounds"],
+                                xlabel="Acceleration (m/s$^2$)",
+                                ylabel="Output neuron", legend=1)
     plt.show()
 
 
@@ -115,7 +135,7 @@ def mpc_multiple_seq():
         ticks.append("[" + str(f[0]) + "," + str(f[1]) + "]")
         arr_f = [f1, f, f3]
 
-        net = torch.load("./models/cruise_model_hyp.pth", map_location=torch.device('cpu'))
+        net = torch.load("../models/cruise_model_hyp.pth", map_location=torch.device('cpu'))
 
         intervals, bounds = evaluate_fcnn_interval(net, arr_f)
         bound_list.append(bounds)
@@ -170,4 +190,5 @@ def disp_bound_images(img_interval):
 
 
 if __name__ == '__main__':
-    basic_net()
+    test_mpc_seq()
+    test_mpc_seq_v2()

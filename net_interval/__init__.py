@@ -26,9 +26,12 @@ def evaluate_fcnn_interval(net, regions):
     return o, np.array(extract_feature_tensor_bounds(o)).reshape(out_classes * 2, 2)
 
 
-def evaluate_conv_samples(net, image, samples=10):
-    out_classes = _get_output_shape(net)
-
+def bounds_from_v2_predictions(predictions):
+    bounds = []
+    for i, b in enumerate(predictions):
+        bounds.append([i, b._inf.item()])
+        bounds.append([i, b._sup.item()])
+    return np.array(bounds)
 
 def evaluate_fcnn_samples(net, regions, cartesian=True, samples=10):
     out_classes = _get_output_shape(net)
@@ -58,7 +61,7 @@ def evaluate_fcnn_samples(net, regions, cartesian=True, samples=10):
 
 
 def class_bounds_from_net_outputs(outputs, out_classes):
-    invnorm_conf = 4.29 # 0.9999910663 confidence interval
+    invnorm_conf = 4.29  # 0.9999910663 confidence interval
     outputs = outputs.detach().numpy()
     num_samples = outputs.shape[0]
     poly = []
@@ -70,12 +73,10 @@ def class_bounds_from_net_outputs(outputs, out_classes):
         max_p = np.max(poly_points)
         mean_p = np.mean(poly_points)
         stdev_p = np.std(poly_points)
-        smc_bounds.append([i, mean_p-stdev_p*invnorm_conf])
-        smc_bounds.append([i, mean_p+stdev_p*invnorm_conf])
+        smc_bounds.append([i, mean_p - stdev_p * invnorm_conf])
+        smc_bounds.append([i, mean_p + stdev_p * invnorm_conf])
         bounds.append([i, min_p])
         bounds.append([i, max_p])
-
-
 
         poly_p_i = np.hstack((i * np.ones((len(poly_points), 1)), poly_points))
         poly.append(poly_p_i)
@@ -123,9 +124,9 @@ def interval_plot_scores_helper(sample_group, bounds, threshold=None, legend=Non
 
 def interval_time_plot_helper(bound_list, neuron=None, class_labels=None, xticks=[], xlabel=None, ylabel=None,
                               title=None):
-    colors = ["darkorange", "royalblue", "lime"]
-    hatches = ["O", "//", "xx", "\\\\", "//"]
+    hatches = ["O", "//", "xx", "\\\\", "//", "O", "//", "xx", "\\\\", "//"]
     class_number = int(len(bound_list[0]) / 2)
+    colors = cm.rainbow(np.linspace(0, 1, class_number))
     time_series = np.empty([len(bound_list[0]), len(bound_list)])  # as the number of output labels*2 (up and inf)
     timestamps = np.linspace(0, len(bound_list), len(bound_list))
     fig, ax = plt.subplots(1, 1)

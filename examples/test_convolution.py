@@ -54,9 +54,6 @@ def testconvnet():
     tensor_int = IntervalTensor(inimg, inimg)
 
     intout = net(tensor_int)
-    output = net(inimg)
-
-    print(output)
     print(intout)
 
 

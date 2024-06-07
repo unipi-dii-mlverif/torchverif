@@ -82,9 +82,9 @@ def gen_matrix_declarations(model_, sym=False):
         if isinstance(layer, nn.Linear):
             weights = layer.weight
             bias = layer.bias
-
+            print(bias)
             # Increase bias dimensions by 1 if 1d
-            if len(bias.shape) == 1:
+            if bias is not None and len(bias.shape) == 1:
                 bias = torch.Tensor(numpy.array([bias.detach().numpy()]))
 
             # Weights must be transposed to match matrix  sizes
@@ -93,8 +93,9 @@ def gen_matrix_declarations(model_, sym=False):
             w_cols = len(weights)
             w_rows = len(weights[0])
 
-            b_cols = len(bias)
-            b_rows = len(bias[0])
+            if bias is not None:
+                b_cols = len(bias)
+                b_rows = len(bias[0])
 
             if sym:
                 pvs_formatted_weight = to_pvs_sym_matrix(tr_weights, "l" + str(i) + "_w")
@@ -104,16 +105,17 @@ def gen_matrix_declarations(model_, sym=False):
             pvs_full_weight_entry = "linear" + str(i) + ": MatrixMN(" + str(w_rows) + "," + str(
                 w_cols) + ") = " + pvs_formatted_weight
 
-            if sym:
-                pvs_formatted_bias = to_pvs_sym_matrix(bias, "l" + str(i) + "_b")
-            else:
-                pvs_formatted_bias = to_pvs_matrix(bias)
+            if bias is not None:
+                if sym:
+                    pvs_formatted_bias = to_pvs_sym_matrix(bias, "l" + str(i) + "_b")
+                else:
+                    pvs_formatted_bias = to_pvs_matrix(bias)
 
-            pvs_full_bias_entry = "linear_bias" + str(i) + ": MatrixMN(" + str(b_cols) + "," + str(
-                b_rows) + ") = " + pvs_formatted_bias
+                pvs_full_bias_entry = "linear_bias" + str(i) + ": MatrixMN(" + str(b_cols) + "," + str(
+                    b_rows) + ") = " + pvs_formatted_bias
+                matrix_declarations.append(pvs_full_bias_entry)
 
             matrix_declarations.append(pvs_full_weight_entry)
-            matrix_declarations.append(pvs_full_bias_entry)
     return matrix_declarations
 
 
@@ -185,7 +187,7 @@ if __name__ == '__main__':
     parser.add_argument("-s", "--sym", required=False, action='store_true')
     args = parser.parse_args()
 
-    model = torch.load(args.model_path)
+    model = torch.load(args.model_path, map_location=torch.device('cpu'))
 
     input_vars = next(model.parameters()).size()[1]
 
@@ -230,3 +232,5 @@ if __name__ == '__main__':
         outfile.write(pvs_buffer)
     else:
         print(pvs_buffer)
+
+

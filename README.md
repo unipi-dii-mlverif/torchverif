@@ -1,9 +1,13 @@
-# torch2pvs
-Torch MLP model to PVS theory converter
+# torchverif
+Multiple pytorch tools towards formal verification of neural networks
+
+### Tools
+
+WIP
 
 ### Prerequisites
 
-Install `torch` and `numpy` with:
+Install dependencies with:
 
 ```bash
 pip install -r requirements.txt
@@ -11,15 +15,4 @@ pip install -r requirements.txt
 
 ### Usage
 
-Output PVS buffer to standard output:
-
-```bash
-python torch2pvs.py examples/model.pth
-```
-
-Output PVS buffer to file:
-
-```bash
-python torch2pvs.py examples/model.pth -p outputs/model.pvs
-```
-
+WIP

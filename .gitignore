@@ -167,3 +167,5 @@ carlanet/
 plots/
 models/
 outputs/
+data/
+examples/carlanet

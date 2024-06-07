@@ -127,7 +127,6 @@ class IntervalTensor(object):
 def Linear(input, weight, bias=None):
     wshape = weight.shape
     output = IntervalTensor(torch.zeros(wshape[0]), torch.ones(wshape[0]))
-    print(weight.shape, input.shape)
     for i, w in enumerate(weight):
         output[i] = torch.sum(input * w)
     if bias is not None:

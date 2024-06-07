@@ -1,15 +1,12 @@
-from matplotlib import patches
-from webencodings import labels
-
-from interval_tensor import IntervalTensor
-from interval_tensor import extract_feature_tensor_bounds
+import matplotlib.cm as cm
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import matplotlib.patches as mpatches
-import matplotlib.colors as mcolors
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-from interval import interval, imath
+from matplotlib import patches
+
+import interval_tensor.v2
+from interval_tensor import IntervalTensor
+from interval_tensor import extract_feature_tensor_bounds
 
 
 def _get_output_shape(net):
@@ -26,12 +23,13 @@ def evaluate_fcnn_interval(net, regions):
     return o, np.array(extract_feature_tensor_bounds(o)).reshape(out_classes * 2, 2)
 
 
-def bounds_from_v2_predictions(predictions):
+def bounds_from_v2_predictions(predictions: interval_tensor.v2.IntervalTensor):
     bounds = []
     for i, b in enumerate(predictions):
         bounds.append([i, b._inf.item()])
         bounds.append([i, b._sup.item()])
     return np.array(bounds)
+
 
 def evaluate_fcnn_samples(net, regions, cartesian=True, samples=10):
     out_classes = _get_output_shape(net)

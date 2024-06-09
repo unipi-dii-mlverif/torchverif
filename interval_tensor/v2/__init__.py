@@ -188,13 +188,13 @@ def MaxPool2D(image, kernel_size, stride=1, padding=(0, 0), dilation=1, groups=1
 
     for batch in range(batches):
         print("MaxPool2D", batch)
-        for cout_j in range(cout):
-            img = image[batch, cout_j]
-            pool = IntervalTensor(torch.empty((hout, wout)), torch.empty((hout, wout)))
-            for i in range(hout):
-                for j in range(wout):
-                    pool[i, j] = torch.max(img[i:i + kernel_size, j:j + kernel_size])
-            output[batch, cout_j] = pool
+        img = image[batch]
+        pool = IntervalTensor(torch.empty((cout, hout, wout)), torch.empty((cout, hout, wout)))
+        for i in range(hout):
+            for j in range(wout):
+                fli = torch.flatten(img[:,i:i + kernel_size, j:j + kernel_size], start_dim=1, end_dim=-1)
+                pool[:, i, j] = torch.max(fli, dim=1)
+        output[batch] = pool
     return output
 
 
@@ -261,6 +261,13 @@ def Squeeze(input, dim):
 @implements(torch.unsqueeze)
 def Unsqueeze(input, dim):
     return IntervalTensor(torch.unsqueeze(input._inf, dim), torch.unsqueeze(input._sup, dim))
+
+@implements(torch.flatten)
+def Flatten(input, start_dim=0, end_dim=-1):
+    return IntervalTensor(torch.flatten(input._inf, start_dim, end_dim),
+                          torch.flatten(input._sup, start_dim, end_dim))
+
+
 
 
 @implements(torch.repeat_interleave)
@@ -362,7 +369,6 @@ if __name__ == '__main__':
     _sup = _inf
     t1 = IntervalTensor(_inf, _inf)
     fil = torch.ones([3, 3, 3, 3])
-    a = torch.nn.functional.conv2d(_inf, fil, stride=[1, 1], padding=[0, 0])
-    print(a)
-    b = torch.nn.functional.conv2d(t1, fil, stride=[1, 1], padding=[0, 0])
-    print(a.shape == b.shape)
+
+    c = torch.nn.functional.max_pool2d(_inf, kernel_size=3, stride=1, padding=0, dilation=1)
+    d = torch.nn.functional.max_pool2d(t1, kernel_size=3, stride=1, padding=0, dilation=1)

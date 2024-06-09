@@ -154,7 +154,6 @@ def Conv2d(image, weight, bias=None, stride=(1, 1), padding=(0, 0), dilation=(1,
     fw = wshape[3]
     hs = stride[0]
     ws = stride[1]
-    print(padding, stride)
     output = IntervalTensor(torch.empty((batches, cout, hout, wout)), torch.empty((batches, cout, hout, wout)))
     for batch in range(batches):
         print("Conv2d", batch, batches, end="\n")
@@ -172,8 +171,8 @@ def Conv2d(image, weight, bias=None, stride=(1, 1), padding=(0, 0), dilation=(1,
         for i in range(hout):
             for j in range(wout):
                 conv_accum[:, i, j] = torch.sum(rimg[:, :, (i * hs):(i * hs + fh), (j * ws):(j * ws + fw)] * weight, dim=[1, 2, 3])
-
-        output[batch] = conv_accum + bias if bias is not None else conv_accum
+                conv_accum[:, i, j] = (conv_accum[:, i, j] + bias) if bias is not None else (conv_accum[:, i, j])
+        output[batch] = conv_accum
     return output
 
 

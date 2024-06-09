@@ -1,8 +1,7 @@
 import functools
-import math
 
-import torch
 import numpy as np
+import torch
 import torch.nn.functional
 
 
@@ -134,13 +133,17 @@ def Linear(input, weight, bias=None):
     return output
 
 
+@implements(torch.nn.functional.pad)
+def Pad(input, pad, mode='constant', value=None):
+    return IntervalTensor(torch.nn.functional.pad(input._inf, pad, mode, value),
+                          torch.nn.functional.pad(input._sup, pad, mode, value))
+
+
 @implements(torch.nn.functional.conv2d)
 def Conv2d(image, weight, bias=None, stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1):
     ishape = image.shape
     batches = ishape[0]
-    print(ishape)
     wshape = weight.shape
-    print(wshape)
     pshape = padding
     dshape = dilation
     hout = int((ishape[2] + 2 * pshape[0] - dshape[0] * (wshape[2] - 1) - 1) / stride[0]) + 1
@@ -149,28 +152,28 @@ def Conv2d(image, weight, bias=None, stride=(1, 1), padding=(0, 0), dilation=(1,
     cin = wshape[1]
     fh = wshape[2]
     fw = wshape[3]
-
     hs = stride[0]
     ws = stride[1]
-
+    print(padding, stride)
     output = IntervalTensor(torch.empty((batches, cout, hout, wout)), torch.empty((batches, cout, hout, wout)))
-    print(output.shape)
     for batch in range(batches):
-        for cout_j in range(cout):
-            print("Conv2d", cout_j, cout, end="\r\n")
-            conv_accum = IntervalTensor(torch.empty((hout, wout)), torch.empty((hout, wout)))
+        print("Conv2d", batch, batches, end="\n")
+        conv_accum = IntervalTensor(torch.empty((cout, hout, wout)), torch.empty((cout, hout, wout)))
 
-            kernels = weight[cout_j, :, :, :]
-            img = image[batch, :, :, :]
-            for i in range(hout):
-                for j in range(wout):
-                    conv_accum[i, j] = torch.sum(img[:, hs:hs + fh, ws:ws + fw] * kernels)
+        rimg = torch.repeat_interleave(
+            torch.unsqueeze(
+                torch.nn.functional.pad(image[batch, :, :, :], (padding[0], padding[1], padding[0], padding[1]), "constant", 0),
+                dim=0
+            ),
+            repeats=cout,
+            dim=0
+        )
 
-            if bias is not None:
-                b = bias[cout_j]
-                conv_accum += b
+        for i in range(hout):
+            for j in range(wout):
+                conv_accum[:, i, j] = torch.sum(rimg[:, :, (i * hs):(i * hs + fh), (j * ws):(j * ws + fw)] * weight, dim=[1, 2, 3])
 
-            output[batch, cout_j] = conv_accum
+        output[batch] = conv_accum + bias if bias is not None else conv_accum
     return output
 
 
@@ -183,7 +186,9 @@ def MaxPool2D(image, kernel_size, stride=1, padding=(0, 0), dilation=1, groups=1
     cout = image.shape[1]
 
     output = IntervalTensor(torch.empty((batches, cout, hout, wout)), torch.empty((batches, cout, hout, wout)))
+
     for batch in range(batches):
+        print("MaxPool2D", batch)
         for cout_j in range(cout):
             img = image[batch, cout_j]
             pool = IntervalTensor(torch.empty((hout, wout)), torch.empty((hout, wout)))
@@ -195,7 +200,8 @@ def MaxPool2D(image, kernel_size, stride=1, padding=(0, 0), dilation=1, groups=1
 
 
 @implements(torch.nn.functional.batch_norm)
-def BatchNorm2D(input, running_mean=None, running_var=None, weight=None, bias=None, training=False, momentum=0.1, eps=1e-05,
+def BatchNorm2D(input, running_mean=None, running_var=None, weight=None, bias=None, training=False, momentum=0.1,
+                eps=1e-05,
                 track_running_stats=True):
     ishape = input.shape
     h = ishape[2]
@@ -243,8 +249,8 @@ def Sum(input, dim=None, keepdim=False, dtype=None):
         sinf = torch.sum(input._inf)
         ssup = torch.sum(input._sup)
     else:
-        sinf = torch.sum(input._inf, dim, keepdim, dtype)
-        ssup = torch.sum(input._sup, dim, keepdim, dtype)
+        sinf = torch.sum(input._inf, dim, keepdim)
+        ssup = torch.sum(input._sup, dim, keepdim)
     return IntervalTensor(sinf, ssup)
 
 
@@ -253,14 +259,24 @@ def Squeeze(input, dim):
     return IntervalTensor(torch.squeeze(input._inf, dim), torch.squeeze(input._sup, dim))
 
 
+@implements(torch.unsqueeze)
+def Unsqueeze(input, dim):
+    return IntervalTensor(torch.unsqueeze(input._inf, dim), torch.unsqueeze(input._sup, dim))
+
+
+@implements(torch.repeat_interleave)
+def RepeatInterleave(input, repeats, dim, output_size=None):
+    return IntervalTensor(torch.repeat_interleave(input._inf, repeats, dim),
+                          torch.repeat_interleave(input._sup, repeats, dim))
+
+
 @implements(torch.max)
 def Max(input, dim=None, keepdim=False, dtype=None):
     if dim is None:
         fl = input._inf.flatten()
         su = input._sup.flatten()
-        v = torch.max(fl)
         i = torch.argmax(fl)
-        return IntervalTensor(v, su[i])
+        return IntervalTensor(fl[i], su[i])
     i = torch.argmax(input._inf, dim, keepdim=True)
     res = IntervalTensor(torch.gather(input._inf, dim, i), torch.gather(input._sup, dim, i))
     if not keepdim:
@@ -315,11 +331,13 @@ def Tanh(input, inplace=False):
     rsup = torch.nn.functional.tanh(input._sup)
     return IntervalTensor(rinf, rsup)
 
+
 @implements(torch.sqrt)
 def Sqrt(input, inplace=False):
     rinf = torch.sqrt(input._inf)
     rsup = torch.sqrt(input._sup)
     return IntervalTensor(rinf, rsup)
+
 
 @implements(torch.square)
 def Square(input, inplace=False):
@@ -341,13 +359,11 @@ def interval_from_infsup(inf_arr, sup_arr, samples=50):
 
 
 if __name__ == '__main__':
-    _inf = torch.randn([2, 3, 32, 32])
+    _inf = torch.randn([3, 3, 5, 5])
     _sup = _inf
     t1 = IntervalTensor(_inf, _inf)
-    fil = torch.randn([3,3,3,3])
-    m = torch.Tensor([0,0,0])
-    v = torch.Tensor([1,1,1])
-    a = torch.nn.functional.conv2d(_inf, fil, stride=[2,2], padding=[0,0])
-    b = torch.nn.functional.conv2d(t1, fil, stride=[2,2], padding=[0,0])
-
-
+    fil = torch.ones([3, 3, 3, 3])
+    a = torch.nn.functional.conv2d(_inf, fil, stride=[1, 1], padding=[0, 0])
+    print(a)
+    b = torch.nn.functional.conv2d(t1, fil, stride=[1, 1], padding=[0, 0])
+    print(a.shape == b.shape)

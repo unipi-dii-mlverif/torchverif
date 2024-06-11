@@ -246,7 +246,9 @@ def Cat(tensors, dim=0, out=None):
 def Sum(input, dim=None, keepdim=False, dtype=None):
     if dim is None:
         sinf = torch.sum(input._inf)
+
         ssup = torch.sum(input._sup)
+
     else:
         sinf = torch.sum(input._inf, dim, keepdim)
         ssup = torch.sum(input._sup, dim, keepdim)
@@ -303,6 +305,37 @@ def Min(input, dim=None, keepdim=False, dtype=None):
     if not keepdim:
         return torch.squeeze(res, dim=dim)
     return res
+
+@implements(torch.sub)
+def Sub(input, other, alpha=1, out=None):
+    if alpha > 0:
+        result = input - (alpha * other)
+    else:
+        result = input + (alpha * other)
+    if out is not None:
+        out = result
+    return result
+
+@implements(torch.add)
+def Add(input, other, alpha=1, out=None):
+    if alpha > 0:
+        result = input + (alpha * other)
+    else:
+        result = input - (alpha * other)
+    if out is not None:
+        out = result
+    return result
+
+@implements(torch.matmul)
+def Matmul(input, other, out=None):
+    output = IntervalTensor(torch.empty([input.shape[0], other.shape[1]]),
+                            torch.empty([input.shape[0], other.shape[1]])
+    )
+    tr = torch.transpose(other, -2, -1)
+    for i, w in enumerate(tr):
+
+        output[:,i] = torch.sum(input * w)
+    return output
 
 
 @implements(torch.mean)

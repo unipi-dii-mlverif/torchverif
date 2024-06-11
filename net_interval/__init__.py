@@ -59,26 +59,19 @@ def evaluate_fcnn_samples(net, regions, cartesian=True, samples=10):
 
 
 def class_bounds_from_net_outputs(outputs, out_classes):
-    invnorm_conf = 4.29  # 0.9999910663 confidence interval
     outputs = outputs.detach().numpy()
     num_samples = outputs.shape[0]
     poly = []
     bounds = []
-    smc_bounds = []
     for i in range(out_classes):
         poly_points = np.reshape(outputs[:, i], (num_samples, 1))
         min_p = np.min(poly_points)
         max_p = np.max(poly_points)
-        mean_p = np.mean(poly_points)
-        stdev_p = np.std(poly_points)
-        smc_bounds.append([i, mean_p - stdev_p * invnorm_conf])
-        smc_bounds.append([i, mean_p + stdev_p * invnorm_conf])
         bounds.append([i, min_p])
         bounds.append([i, max_p])
-
         poly_p_i = np.hstack((i * np.ones((len(poly_points), 1)), poly_points))
         poly.append(poly_p_i)
-    return poly, np.array(bounds), np.array(smc_bounds)
+    return poly, np.array(bounds)
 
 
 def interval_plot_scores_helper(sample_group, bounds, threshold=None, legend=None, class_labels=None, xticks=[],

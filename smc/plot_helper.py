@@ -7,7 +7,7 @@ def format_query_bounds(min_bounds: torch.Tensor, max_bounds: torch.Tensor):
     min_bounds = min_bounds.detach().numpy()
     max_bounds = max_bounds.detach().numpy()
 
-    out_classes = min_bounds.shape[0]
+    out_classes = min_bounds.shape[1]
     bounds = []
     for i in range(out_classes):
         bounds.append([int(i), min_bounds[0, i]])

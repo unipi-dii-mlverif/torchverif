@@ -1,7 +1,7 @@
 from interval_tensor.v2 import IntervalTensor
 import torch
 from scipy.stats import norm
-import plot_helper
+
 class Simulator:
     def __init__(self, program):
         torch.set_grad_enabled(False)
@@ -35,6 +35,7 @@ class Simulator:
 
 
 if __name__ == '__main__':
+    import smc.plot_helper
     net = torch.load("../models/attack_nn_4layers_6feat.pth", map_location=torch.device('cpu'))
     net = torch.nn.Sequential(*(list(net.children())[:-1]))
 

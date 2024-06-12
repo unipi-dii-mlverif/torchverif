@@ -3,10 +3,10 @@ import torch
 from scipy.stats import norm
 
 class Simulator:
-    def __init__(self, program):
+    def __init__(self, program, internal_samples=1000):
         torch.set_grad_enabled(False)
         self.program = program
-        self.internal_samples = 1000
+        self.internal_samples = internal_samples
         self.simulation_samples = None
         self.simulation_iterations = None
 
@@ -32,6 +32,9 @@ class Simulator:
         query_bounds = torch.hstack([query_predictor - conf, query_predictor + conf])
         query_bounds = torch.squeeze(query_bounds, 0)
         return query_bounds
+
+    def minmax_query(self, confidence=0.99):
+        return self.query(torch.min, confidence), self.query(torch.max, confidence)
 
 
 if __name__ == '__main__':

@@ -1,7 +1,8 @@
 from interval_tensor.v2 import IntervalTensor
 import torch
 from scipy.stats import norm
-
+from scipy import stats
+from smc import plot_helper
 class Simulator:
     def __init__(self, program, internal_samples=1000):
         torch.set_grad_enabled(False)
@@ -16,7 +17,6 @@ class Simulator:
         self.simulation_samples = self.program(samples)
         self.simulation_samples = torch.reshape(self.simulation_samples, (iterations, self.internal_samples, -1))
         self.simulation_iterations = iterations
-        print(self.simulation_samples.shape)
         return self.simulation_samples
 
     def query(self, functor, confidence=0.99):
@@ -33,12 +33,16 @@ class Simulator:
         query_bounds = torch.squeeze(query_bounds, 0)
         return query_bounds
 
+    def cdf(self, index):
+        index_samples = self.simulation_samples[:,:,index]
+        flattened = torch.flatten(index_samples)
+        normalized_cdf = stats.ecdf(flattened)
+        return normalized_cdf
+
     def minmax_query(self, confidence=0.99):
         return self.query(torch.min, confidence), self.query(torch.max, confidence)
 
-
 if __name__ == '__main__':
-    import smc.plot_helper
     net = torch.load("../models/attack_nn_4layers_6feat.pth", map_location=torch.device('cpu'))
     net = torch.nn.Sequential(*(list(net.children())[:-1]))
 
@@ -53,12 +57,13 @@ if __name__ == '__main__':
     arr_f = torch.Tensor([f5, f6, f1, f2, f3, f4])
     interval = IntervalTensor(arr_f[:, 0], arr_f[:, 1])
     simulator.simulate(interval, 100)
+    cdf0 = simulator.cdf(0)
+    cdf1 = simulator.cdf(1)
+
+    plot_helper.plot_cdf(cdf0, legend="Class 0")
+    plot_helper.plot_cdf(cdf1, legend="Class 1")
+    plot_helper.show_plot(legend=True, xlabel="Prediction score")
+
     a = simulator.query(torch.max, confidence=0.9999)
     b = simulator.query(torch.min, confidence=0.9999)
     c = simulator.query(torch.mean, confidence=0.9999)
-
-    print(c)
-
-    bo = plot_helper.format_query_bounds(a,b)
-    plot_helper.interval_plot_scores_helper([], bo, threshold=0)
-    plot_helper.show_plot()

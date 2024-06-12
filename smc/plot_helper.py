@@ -25,6 +25,26 @@ def format_query_output(output: torch.Tensor):
     return np.array(bounds)
 
 
+def sure_class(formatted_query_output: torch.Tensor):
+    tf = torch.Tensor(formatted_query_output)
+    _, argsorted = torch.sort(tf[:, 1], dim=0, descending=True)
+    tf = tf[argsorted]
+    if tf[0, 0] == tf[1, 0]:
+        return int(tf[0, 0].item())
+    else:
+        return None
+
+
+def plot_cdf(cdf_data, xlabel=None, legend=None):
+    if legend is not None:
+        cdf_data.cdf.plot(label=legend)
+    else:
+        cdf_data.cdf.plot()
+    plt.ylabel("Empirical CDF")
+    if xlabel is not None:
+        plt.xlabel(xlabel)
+
+
 def interval_plot_scores_helper(sample_group, bounds, threshold=None, legend=None, class_labels=None, xticks=[],
                                 xlabel=None, ylabel=None, title=None):
     colors = cm.rainbow(np.linspace(0, 1, len(bounds)))
@@ -64,9 +84,20 @@ def interval_plot_scores_helper(sample_group, bounds, threshold=None, legend=Non
     plt.xlabel(xlabel if xlabel is not None else "")
 
 
-def show_plot():
+def finalize_plot(legend=False, xlabel=None, ylabel=None):
+    if legend:
+        plt.legend()
+    if xlabel is not None:
+        plt.xlabel(xlabel)
+    if ylabel is not None:
+        plt.ylabel(ylabel)
+
+
+def show_plot(legend=False, xlabel=None, ylabel=None):
+    finalize_plot(legend, xlabel, ylabel)
     plt.show()
 
 
-def save_plot(filename):
+def save_plot(filename, legend=False, xlabel=None, ylabel=None):
+    finalize_plot(legend, xlabel, ylabel)
     plt.savefig(filename)

@@ -95,7 +95,7 @@ def gen_constraint_expressions(input_vars_l):
     return constraints_
 
 
-def emit_pvs_from_pth(pth_path, output_path=None):
+def emit_pvs_from_pth(pth_path, name="nn_theory", output_path=None):
     model = torch.load(pth_path, map_location=torch.device('cpu'))
     input_vars = next(model.parameters()).size()[1]
     theorem, x_vars, x_names = gen_theorem("network_bounds", input_vars)
@@ -105,7 +105,7 @@ def emit_pvs_from_pth(pth_path, output_path=None):
     # PVS buffer gen
     pvs_buffer = ""
     pvs_buffer += "%" + str(model).replace("\n", "\n%") + "\n"
-    pvs_buffer += args.name + const_header
+    pvs_buffer += name + const_header
     pvs_buffer += "\n\t"
     pvs_buffer += "\n" + constraints
     pvs_buffer += "\n\t"
@@ -115,7 +115,7 @@ def emit_pvs_from_pth(pth_path, output_path=None):
         pvs_buffer += "\t\t\n\t\t" + net + "\n\n"
     pvs_buffer += "\t" + theorem
     pvs_buffer += "\n" + relu_strategy
-    pvs_buffer += "\n\n" + const_trailer + args.name
+    pvs_buffer += "\n\n" + const_trailer + name
     pvs_buffer += "\n\t"
 
     if output_path is not None:

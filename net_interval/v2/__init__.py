@@ -1,3 +1,5 @@
+from matplotlib import patches
+
 import interval_tensor.v2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -68,10 +70,10 @@ def interval_plot_scores_helper(sample_group, bounds, threshold=None, legend=Non
 
 
 def interval_time_plot_helper(bound_list, neuron=None, class_labels=None, xticks=[], xlabel=None, ylabel=None,
-                              title=None):
+                              title=None, threshold=None):
     hatches = ["O", "//", "xx", "\\\\", "//", "O", "//", "xx", "\\\\", "//"]
     class_number = int(len(bound_list[0]) / 2)
-    colors = cm.rainbow(np.linspace(0, 1, class_number))
+    colors = ["red"]
     time_series = np.empty([len(bound_list[0]), len(bound_list)])  # as the number of output labels*2 (up and inf)
     timestamps = np.linspace(0, len(bound_list), len(bound_list))
     fig, ax = plt.subplots(1, 1)
@@ -101,7 +103,8 @@ def interval_time_plot_helper(bound_list, neuron=None, class_labels=None, xticks
             #    l.set_label(class_labels[i])
             # else:
             #    l.set_label("Neuron " + str(color_idx))
-    plt.hlines(y=0, xmin=0, xmax=len(timestamps), linestyles="dashed")
+    if threshold is not None:
+        plt.hlines(y=threshold, xmin=0, xmax=len(timestamps), linestyles="dashed")
 
     if xticks is not None:
         ax.set_xticks(np.arange(0, len(xticks)))

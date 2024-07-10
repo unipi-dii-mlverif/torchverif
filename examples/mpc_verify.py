@@ -12,7 +12,6 @@ def test_mpc_seq():
     f2 = [0, 35]
     f3 = [-2, 2]
     arr_f = [f1, f2, f3]
-    net = torch.load("../models/model.pth", map_location=torch.device('cpu'))
     intervals, bounds = evaluate_fcnn_interval(net, arr_f)
     print(bounds)
     interval_plot_scores_helper([], bounds, threshold=0,

@@ -1,5 +1,5 @@
-from net_interval import *
-from pvs import *
+from torchverif.net_interval.v1 import *
+from torchverif.pvs import *
 import matplotlib.pyplot as plt
 
 

@@ -1,6 +1,7 @@
-from net_interval import *
+from torchverif.net_interval.v2 import *
+from torchverif.net_interval.v1 import evaluate_fcnn_samples, evaluate_fcnn_interval, verify_bound_disjunction
 import matplotlib.pyplot as plt
-
+import torch
 
 def test_attack_nn():
     # Input regions

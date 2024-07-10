@@ -1,7 +1,7 @@
 import numpy as np
 import torch
-from interval_tensor import IntervalTensor
-from interval_tensor import extract_feature_tensor_bounds
+from torchverif.interval_tensor.v1 import IntervalTensor
+from torchverif.interval_tensor.v1 import extract_feature_tensor_bounds
 
 
 def _get_output_shape(net):

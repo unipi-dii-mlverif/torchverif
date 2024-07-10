@@ -1,6 +1,6 @@
 import torch
 
-from interval_tensor.v2 import *
+from torchverif.interval_tensor.v2 import *
 import torch.nn as nn
 import matplotlib.pyplot as plt
 

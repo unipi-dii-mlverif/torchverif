@@ -1,9 +1,8 @@
-import smc.plot_helper
-from interval_tensor.v2 import IntervalTensor
+from torchverif.interval_tensor.v2 import IntervalTensor
 import torch
 from scipy.stats import norm
 from scipy import stats
-from smc import plot_helper
+
 class Simulator:
     def __init__(self, program, internal_samples=1000):
         torch.set_grad_enabled(False)

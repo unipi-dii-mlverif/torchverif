@@ -1,12 +1,12 @@
 from matplotlib import patches
 
-import interval_tensor.v2
+import torchverif.interval_tensor.v2
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
 
-def bounds_from_v2_predictions(predictions: interval_tensor.v2.IntervalTensor):
+def bounds_from_v2_predictions(predictions: torchverif.interval_tensor.v2.IntervalTensor):
     bounds = []
     for i, b in enumerate(predictions):
         bounds.append([i, b._inf.item()])

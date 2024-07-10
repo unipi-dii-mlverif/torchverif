@@ -1,5 +1,6 @@
-import smc
-from interval_tensor.v2 import IntervalTensor
+from torchverif import smc
+from torchverif.smc import plot_helper
+from torchverif.interval_tensor.v2 import IntervalTensor
 import torch
 from scipy.stats import norm
 from scipy import stats
@@ -8,7 +9,7 @@ if __name__ == '__main__':
     net = torch.load("../models/attack_nn_4layers_6feat.pth", map_location=torch.device('cpu'))
     net = torch.nn.Sequential(*(list(net.children())[:-1]))
 
-    simulator = Simulator(net)
+    simulator = smc.Simulator(net)
     f1 = [38, 46]  # MEAN VALUE DISTANCE EGO-LEAD
     f2 = [1, 3]  # STD DISTANCE EGO-LEAD
     f3 = [7, 13]  # MEAN VALUE RELATIVE SPEED EGO-LEAD
@@ -30,6 +31,9 @@ if __name__ == '__main__':
     b = simulator.query(torch.min, confidence=0.9999)
     c = simulator.query(torch.mean, confidence=0.9999)
 
+    print(a)
+    print(b)
+    print(c)
     bo = smc.plot_helper.format_query_bounds(a,b)
     smc.plot_helper.interval_plot_scores_helper([], bo)
     smc.plot_helper.show_plot()

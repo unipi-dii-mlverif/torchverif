@@ -3,7 +3,9 @@ Multiple pytorch tools towards formal verification of neural networks
 
 ### Tools
 
-WIP
+- PyTorch to PVS theory generation
+- Interval propagation through PyTorch network
+- Statistical Model Checking (SMC) neural network verification
 
 ### Prerequisites
 
@@ -15,4 +17,4 @@ pip install -r requirements.txt
 
 ### Usage
 
-WIP
+See `tests/` for examples

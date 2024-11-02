@@ -203,28 +203,34 @@ def BatchNorm2D(input, running_mean=None, running_var=None, weight=None, bias=No
                 eps=1e-05,
                 track_running_stats=True):
     ishape = input.shape
-    h = ishape[2]
-    w = ishape[3]
-    cout = ishape[1]
-    batches = input.shape[0]
-    output = IntervalTensor(torch.empty((batches, cout, h, w)), torch.empty((batches, cout, h, w)))
-    for cout_j in range(cout):
+    print(len(ishape))
+    if len(ishape) > 2:
+        h = ishape[2]
+        w = ishape[3]
+        cout = ishape[1]
+        batches = input.shape[0]
+        output = IntervalTensor(torch.empty((batches, cout, h, w)), torch.empty((batches, cout, h, w)))
+        for cout_j in range(cout):
 
-        img = input[:, cout_j, :, :]
-        mean = torch.mean(img)
-        var = torch.var(img)
-        if track_running_stats and running_mean is not None and running_var is not None:
-            mean = mean * (momentum) + (1 - momentum) * running_mean[cout_j]
-            var = var * (momentum) + (1 - momentum) * running_var[cout_j]
+            img = input[:, cout_j, :, :]
+            mean = torch.mean(img)
+            var = torch.var(img)
+            if track_running_stats and running_mean is not None and running_var is not None:
+                mean = mean * (momentum) + (1 - momentum) * running_mean[cout_j]
+                var = var * (momentum) + (1 - momentum) * running_var[cout_j]
 
-        bi = bias[cout_j]
-        we = weight[cout_j]
-        norm_img = (img - mean) / torch.sqrt(var + eps)
-        output[:, cout_j] = norm_img * we + bi
+            bi = bias[cout_j]
+            we = weight[cout_j]
+            norm_img = (img - mean) / torch.sqrt(var + eps)
+            output[:, cout_j] = norm_img * we + bi
 
-    return output
-
-
+        return output
+    else:
+        assert not training
+        xmean = running_mean
+        xvar = running_var
+        xhat = (input - xmean)/torch.sqrt(xvar + eps)
+        return  xhat*weight + bias
 @implements(torch.cat)
 def Cat(tensors, dim=0, out=None):
     cat_inf = None

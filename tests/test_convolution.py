@@ -11,11 +11,28 @@ def test_maxpool():
         torch.nn.MaxPool2d(5, 1, padding=0)
     )
 
+
     tensor_int = IntervalTensor(torch.unsqueeze(tensor_i, -1).numpy())
     print(tensor_i)
     max_i = net(tensor_i)
     max_int = net(tensor_int)
     print(max_i, max_int)
+
+
+def test_batchn1d():
+    tensor_i = torch.randn((1, 20))
+    net = torch.nn.Sequential(
+        torch.nn.BatchNorm1d(20),
+    )
+
+    net.eval()
+
+    tensor_int = IntervalTensor(tensor_i, tensor_i)
+    batch_i = net(tensor_i)
+    batch_int = net(tensor_int)
+
+    print(batch_i, "\n", batch_int)
+
 
 
 def test_batchn():
@@ -58,4 +75,4 @@ def testconvnet():
 
 
 if __name__ == '__main__':
-    testconvnet()
+    test_batchn1d()

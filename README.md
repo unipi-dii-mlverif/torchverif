@@ -7,12 +7,17 @@ Multiple pytorch tools towards formal verification of neural networks
 - Interval propagation through PyTorch network
 - Statistical Model Checking (SMC) neural network verification
 
-### Prerequisites
+### Prerequisites (if needed)
 
 Install dependencies with:
 
 ```bash
 pip install -r requirements.txt
+```
+
+### Install 
+```bash
+pip install torchverif
 ```
 
 ### Usage

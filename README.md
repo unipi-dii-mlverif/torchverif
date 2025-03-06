@@ -5,7 +5,7 @@ Multiple pytorch tools towards formal verification of neural networks
 
 - PyTorch to PVS theory generation
 - Interval propagation through PyTorch network
-- Statistical Model Checking (SMC) neural network verification
+- Statistical Model Analysis (SMA) neural network verification
 
 ### Prerequisites (if needed)
 

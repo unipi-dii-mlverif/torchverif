@@ -363,6 +363,19 @@ def ReLU(input, inplace=False):
     return IntervalTensor(rinf, rsup)
 
 
+@implements(torch.nn.functional.leaky_relu)
+def LeakyReLU(input, negative_slope=0.01, inplace=False):
+    rinf = torch.nn.functional.leaky_relu(input._inf, negative_slope)
+    rsup = torch.nn.functional.leaky_relu(input._sup, negative_slope)
+    return IntervalTensor(rinf, rsup)
+
+
+@implements(torch.nn.functional.dropout)
+def Dropout(input, p=0.5, training=True, inplace=False):
+    # Dropout is a no-op at inference time; intervals pass through unchanged.
+    return input
+
+
 @implements(torch.sigmoid)
 def Sigmoid(input, inplace=False):
     rinf = torch.nn.functional.sigmoid(input._inf)

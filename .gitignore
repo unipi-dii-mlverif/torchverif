@@ -169,3 +169,5 @@ models/
 outputs/
 data/
 examples/carlanet
+.vscode
+torch2pvs_old.py
